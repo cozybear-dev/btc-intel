@@ -33,7 +33,8 @@ WILDCARD_BINDS = ("0.0.0.0", "::", "")
 
 def allowed_hosts(bind_host: str) -> list[str]:
     """Host headers the API answers. Checking them blocks DNS rebinding: without it any web page the
-    analyst visits could reach this unauthenticated, local-only API through the browser."""
+    analyst visits could reach this unauthenticated, local-only API through the browser. An explicit
+    BTCINTEL_ALLOWED_HOSTS list takes precedence, so a container bound to 0.0.0.0 keeps the check."""
     if bind_host in WILDCARD_BINDS:
         return ["*"]  # deliberately exposed on every interface (the CLI warns)
     host = f"[{bind_host}]" if ":" in bind_host and not bind_host.startswith("[") else bind_host
@@ -50,7 +51,8 @@ def create_app(settings: Settings | None = None, *, chain: ChainSource | None = 
             yield
 
     app = FastAPI(title="btc-intel", version=__version__, lifespan=lifespan)
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts(settings.host))
+    app.add_middleware(TrustedHostMiddleware,
+                       allowed_hosts=list(settings.allowed_hosts) or allowed_hosts(settings.host))
     for module in (routes_chain, routes_trace, routes_analysis, routes_cluster, routes_tags, routes_cases, routes_kb):
         app.include_router(module.router)
 
