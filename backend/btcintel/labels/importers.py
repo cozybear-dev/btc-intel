@@ -36,7 +36,8 @@ class ImportReport:
 
 def fetch(url: str, proxy: str | None = None, timeout: float = 300.0) -> bytes:
     resp = httpx.get(url, proxy=proxy, timeout=timeout, follow_redirects=True,
-                     headers={"User-Agent": "btc-intel-importer/0.1"})
+                     # identity: some sources (api.ransomwhe.re) answer 502 when compression is offered
+                     headers={"User-Agent": "btc-intel-importer/0.1", "Accept-Encoding": "identity"})
     resp.raise_for_status()
     return resp.content
 

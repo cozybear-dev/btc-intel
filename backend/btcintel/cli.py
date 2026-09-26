@@ -7,6 +7,8 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
+import httpx
+
 from btcintel import __version__
 from btcintel.catalog.loader import CatalogError, check_catalog, load_catalog
 from btcintel.catalog.online import check_urls, verify_seeds
@@ -102,7 +104,11 @@ def _cmd_import_tags(args: argparse.Namespace) -> int:
         url = {"graphsense": importers.GRAPHSENSE_TARBALL_URL, "ofac": importers.OFAC_SDN_URL,
                "pools": importers.POOLS_URL, "ransomwhere": importers.RANSOMWHERE_URL}[source]
         print(f"downloading {url} …", file=sys.stderr)
-        data = importers.fetch(url, proxy=settings.proxy)
+        try:
+            data = importers.fetch(url, proxy=settings.proxy)
+        except httpx.HTTPError as e:
+            print(f"download failed: {e}", file=sys.stderr)
+            return 1
         report = {
             "graphsense": lambda: importers.import_graphsense_tarball(store, taxonomy, data),
             "ofac": lambda: importers.import_ofac(store, data),

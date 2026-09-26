@@ -163,3 +163,16 @@ def test_import_functions_store_tags():
     assert rep.tags == 1 and store.coinbase_rules()[0][1] in {"ViaBTC", "BlockFills"}
     assert import_ransomwhere(store, RANSOM.encode()).tags == 1
     assert {p for p, _ in store.packs()} == {"gs:blender_io", "ofac_sdn", "mempool_pools", "ransomwhere"}
+
+
+def test_fetch_requests_uncompressed_bodies():
+    """Some tag sources (api.ransomwhe.re) answer 502 when compression is offered."""
+    import httpx
+    import respx
+
+    from btcintel.labels.importers import fetch
+
+    with respx.mock:
+        route = respx.get("https://src.test/export").mock(return_value=httpx.Response(200, content=b"ok"))
+        assert fetch("https://src.test/export") == b"ok"
+    assert route.calls[0].request.headers["Accept-Encoding"] == "identity"
