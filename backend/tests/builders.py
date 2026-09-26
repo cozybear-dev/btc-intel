@@ -84,3 +84,17 @@ def mk_tx(
             block_time=1_700_000_000 if confirmed else None,
         ),
     )
+
+
+# Valid mainnet addresses for tests that need real address syntax (seeds, API paths).
+ADDR = [
+    "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", "bc1qntndgqfx46wks63jep34cjk3pw63es86kp45c6",
+    "3NDzzVxiLBUs1WPvVGRfCYDTAD2Ua2PvW4", "32fbAZMTaQxNd2fAue1PgsiPgWfcsHBQQt",
+    "112D2adLM3UKy4Z4giRbReR6gjWuvHUqB", "31h38a54tFMrR8kzBnP2241MFD2EUHtGha",
+    "bc1qqqqsyqcyq5rqwzqfpg9scrgwpugpzysn4v0345",
+    "bc1pqqqsyqcyq5rqwzqfpg9scrgwpugpzysnzs23v9ccrydpk8qarc0sg5tmnz",
+    "1AXeFwAnsd1BkvBwPumsNnjzp4sAEUwyMX", "1Ep9h83bhzyjoRiCkG7e45bHRD3ApZh4QS",
+    "13qpzTcRsRnaG4e4fZgwr2Y3qf8fZktKUX", "1J5VmAoXLfwsT4h18hJTLtFejsVV7gTSAK",
+    "bc1qnv4s80dwudw0ts7nxq4t2s5hgr5kzmnrfh4rmw", "12aNKp2iDKuhEde2YfPdd4DFGenRUTKupL",
+    "17TMc2UkVRSga2yYvuxSD9Q1XyB2EPRjTF",
+]
