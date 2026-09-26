@@ -197,3 +197,17 @@ async def test_labeled_seed_address_is_traced_back_through_its_own_older_coins()
     assert not any(st.node == f"addr:{seed}" for st in r.stops)
     coinbase = next(st for st in r.stops if st.reason == "coinbase")
     assert coinbase.node == f"tx:{cb.txid}" and coinbase.hops == 3
+
+
+async def test_backward_labeled_payer_stops_as_labeled_even_below_min_value():
+    from btcintel.labels.store import Tag
+    a = UNTAGGED
+    sanctioned = a[0]
+    payer = mk_tx([(sanctioned, 60_000)] + [(a[2], 60_000)] * 9, [(a[1], 50_000), (a[3], 540_000)])
+    labels = make_labels([Tag(address=sanctioned, label="OFAC hot wallet", category="organization",
+                              abuse="sanctioned", confidence="authority_data", source="t", pack="t")],
+                         stop_categories=["sanctioned"])
+    r = await trace(TraceSeed(address=a[1]), TracePolicy(direction="backward"), chain=FakeChain([payer]),
+                    labels=labels)
+    stop = next(st for st in r.stops if st.node == f"addr:{sanctioned}")
+    assert stop.reason == "labeled" and stop.hops == 1

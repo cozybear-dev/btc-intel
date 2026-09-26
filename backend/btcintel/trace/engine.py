@@ -241,18 +241,19 @@ async def _backward(seed: TraceSeed, policy: TracePolicy, chain: ChainSource, la
         if (txin.prev_txid, txin.prev_vout) in seeded:
             continue
         node = addr_node_id(txin.address) if txin.address else tx_node_id(txid)
+        # Labels first, as forward: a small payment from a labeled payer is still that payer, not
+        # "below the minimum value". The seed address's own older coins are traced through.
+        if txin.address and txin.address != seed.address:
+            info = labels.lookup(txin.address)
+            if info.stop_category:
+                g.stop(node, "labeled", amount, f"{info.stop_category}: {info.label}", hops=hop)
+                continue
         if amount < policy.min_value_sats:
             g.stop(node, "min_value", amount, hops=hop)
             continue
         if hop > policy.max_hops:
             g.stop(node, "max_hops", amount, hops=hop)
             continue
-        # As forward: the seed address's own older coins are traced through, not a labeled stop.
-        if txin.address and txin.address != seed.address:
-            info = labels.lookup(txin.address)
-            if info.stop_category:
-                g.stop(node, "labeled", amount, f"{info.stop_category}: {info.label}", hops=hop)
-                continue
         if txin.prev_txid not in g.txs and len(g.txs) >= policy.max_txs:
             g.truncated = True
             g.stop(node, "max_txs", amount, hops=hop)
