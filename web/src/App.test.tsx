@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 
 vi.mock("./components/GraphCanvas", () => ({ default: () => <div data-testid="graph-canvas" /> }));
 vi.mock("./components/KbBrowser", () => ({ default: ({ path }: { path: string }) => <div>KB {path}</div> }));
+vi.mock("./components/AnalysisView", () => ({ default: ({ address }: { address: string }) => <div>Analysis of {address}</div> }));
 vi.mock("./api/client", async () => {
   const actual = await vi.importActual<typeof import("./api/client")>("./api/client");
   return { ...actual, api: { health: vi.fn().mockResolvedValue({ status: "ok", version: "0.1.0" }), kb: vi.fn().mockResolvedValue([]), cases: vi.fn().mockResolvedValue([]) } };
@@ -32,4 +33,11 @@ test("switches to the knowledge base view", async () => {
   renderApp();
   await userEvent.click(screen.getByRole("button", { name: /knowledge base/i }));
   expect(await screen.findByText("KB index.md")).toBeInTheDocument();
+});
+
+test("renders the analysis view for an analysis route", () => {
+  window.location.hash = "#/analysis/bc1qx";
+  renderApp();
+  expect(screen.getByText("Analysis of bc1qx")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Analysis" })).toBeInTheDocument();
 });

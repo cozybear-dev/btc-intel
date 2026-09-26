@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { Tag } from "../api/types";
 import { shortAddr } from "../lib/format";
-import { openAddress, search } from "../state/actions";
+import { navigate } from "../lib/route";
+import { search } from "../state/actions";
 
 export default function SearchBar() {
   const [query, setQuery] = useState("");
@@ -33,7 +34,7 @@ export default function SearchBar() {
                 className="w-full text-left px-3 py-1 hover:bg-[var(--panel-2)]"
                 onClick={() => {
                   setHits([]);
-                  void openAddress(t.address);
+                  navigate({ view: "analysis", address: t.address });
                 }}
               >
                 {t.label} <span className="muted mono">{shortAddr(t.address)} · {t.category}{t.abuse ? ` / ${t.abuse}` : ""} · {t.pack}</span>

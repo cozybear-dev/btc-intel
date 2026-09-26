@@ -5,7 +5,7 @@ import type { MouseEvent } from "react";
 import { api } from "../api/client";
 import type { Heuristic, Incident, Technique } from "../api/types";
 import { navigate } from "../lib/route";
-import { openAddress, openTx } from "../state/actions";
+import { openTx } from "../state/actions";
 
 export function renderMarkdown(md: string): string {
   const html = marked.parse(md, { async: false }) as string;
@@ -76,13 +76,17 @@ export default function KbBrowser({ path }: { path: string }) {
                   <span className="muted">{s.role}{s.note ? ` · ${s.note}` : ""}</span>
                   <button
                     className="btn"
-                    aria-label={`open ${s.value} in graph`}
+                    aria-label={s.kind === "tx" ? `open ${s.value} in graph` : `analyse ${s.value}`}
                     onClick={() => {
-                      navigate({ view: "graph" });
-                      void (s.kind === "tx" ? openTx(s.value) : openAddress(s.value));
+                      if (s.kind === "tx") {
+                        navigate({ view: "graph" });
+                        void openTx(s.value);
+                      } else {
+                        navigate({ view: "analysis", address: s.value });
+                      }
                     }}
                   >
-                    Open in graph
+                    {s.kind === "tx" ? "Open in graph" : "Analyse"}
                   </button>
                 </li>
               ))}

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Core } from "cytoscape";
 import { useCallback, useRef, useState } from "react";
 import { api } from "./api/client";
+import AnalysisView from "./components/AnalysisView";
 import CasePanel from "./components/CasePanel";
 import GraphCanvas from "./components/GraphCanvas";
 import Inspector from "./components/Inspector";
@@ -21,6 +22,7 @@ export default function App() {
   const cyRef = useRef<Core | null>(null);
   const health = useQuery({ queryKey: ["health"], queryFn: api.health, refetchInterval: 30_000 });
   const caseName = useWorkbench((s) => s.caseName);
+  const lastAnalysis = useWorkbench((s) => s.analysis?.address ?? null);
   const onReady = useCallback((cy: Core) => { cyRef.current = cy; }, []);
 
   const exportPng = () => {
@@ -40,6 +42,14 @@ export default function App() {
         <SearchBar />
         <nav className="flex gap-1">
           <button className={`btn ${route.view === "graph" ? "btn-primary" : ""}`} onClick={() => navigate({ view: "graph" })}>Graph</button>
+          <button
+            className={`btn ${route.view === "analysis" ? "btn-primary" : ""}`}
+            disabled={!lastAnalysis && route.view !== "analysis"}
+            title={lastAnalysis ? "" : "Search an address to analyse it"}
+            onClick={() => lastAnalysis && navigate({ view: "analysis", address: lastAnalysis })}
+          >
+            Analysis
+          </button>
           <button className={`btn ${route.view === "kb" ? "btn-primary" : ""}`} onClick={() => navigate({ view: "kb", path: "index.md" })}>Knowledge base</button>
         </nav>
         <span className="muted text-xs whitespace-nowrap">
@@ -49,6 +59,8 @@ export default function App() {
       <div className="flex-1 min-h-0">
         {route.view === "kb" ? (
           <KbBrowser path={route.path} />
+        ) : route.view === "analysis" ? (
+          <AnalysisView address={route.address} />
         ) : (
           <div className="flex h-full">
             <div className="flex-1 min-w-0">

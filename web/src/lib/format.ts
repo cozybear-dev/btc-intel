@@ -23,3 +23,9 @@ export function btcToSats(btc: string): number | null {
   if (btc.trim() === "" || !Number.isFinite(n) || n < 0) return null;
   return Math.round(n * SATS_PER_BTC);
 }
+
+/** Share (0–1) as a percentage, like the backend report: one decimal below 10%, none above. */
+export function formatPct(share: number): string {
+  const p = (Number.isFinite(share) ? share : 0) * 100;
+  return `${p < 10 ? p.toFixed(1) : p.toFixed(0)}%`;
+}

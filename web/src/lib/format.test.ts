@@ -1,4 +1,4 @@
-import { btcToSats, formatBtc, formatTime, shortAddr, shortTxid } from "./format";
+import { btcToSats, formatBtc, formatPct, formatTime, shortAddr, shortTxid } from "./format";
 
 test("formatBtc trims trailing zeros and stays finite", () => {
   expect(formatBtc(0)).toBe("0 BTC");
@@ -24,4 +24,10 @@ test("btcToSats", () => {
   expect(btcToSats("1.23456789")).toBe(123_456_789);
   expect(btcToSats("-1")).toBeNull();
   expect(btcToSats("abc")).toBeNull();
+});
+
+test("formatPct matches the backend report", () => {
+  expect(formatPct(0.6667)).toBe("67%");
+  expect(formatPct(0.04)).toBe("4.0%");
+  expect(formatPct(1)).toBe("100%");
 });

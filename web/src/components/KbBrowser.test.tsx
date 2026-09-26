@@ -6,10 +6,9 @@ vi.mock("../api/client", async () => {
   const actual = await vi.importActual<typeof import("../api/client")>("../api/client");
   return { ...actual, api: { kb: vi.fn(), kbPage: vi.fn() } };
 });
-vi.mock("../state/actions", () => ({ openTx: vi.fn(), openAddress: vi.fn() }));
+vi.mock("../state/actions", () => ({ openTx: vi.fn() }));
 
 import { api } from "../api/client";
-import * as actions from "../state/actions";
 import KbBrowser, { renderMarkdown, resolveKbLink } from "./KbBrowser";
 
 const mocked = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -40,6 +39,6 @@ test("incident pages list seeds that open in the graph", async () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<QueryClientProvider client={client}><KbBrowser path="incidents/i-2021-colonial.md" /></QueryClientProvider>);
   expect(await screen.findByRole("heading", { name: /I-2021-COLONIAL/ })).toBeInTheDocument();
-  await userEvent.click(await screen.findByRole("button", { name: /open bc1qx in graph/i }));
-  expect(actions.openAddress).toHaveBeenCalledWith("bc1qx");
+  await userEvent.click(await screen.findByRole("button", { name: /analyse bc1qx/i }));
+  expect(window.location.hash).toBe("#/analysis/bc1qx");
 });

@@ -4,7 +4,7 @@ import type {
   AnalysisReport, AnalysisSections, Category, Depth, NewTag, RiskLevel, SearchResponse, TracePolicy, TraceSeed,
 } from "../api/types";
 import {
-  addNodes, addTagToNode, addrNodeId, addressNode, applyJobEvent, emptyGraph, fromSaved, mergeTx,
+  addTagToNode, addrNodeId, applyJobEvent, emptyGraph, fromSaved, mergeTx,
   setClusterForAddresses, toSaved, txNodeId,
 } from "../graph/model";
 import { shortAddr } from "../lib/format";
@@ -55,14 +55,6 @@ export const openTx = (txid: string) =>
     const resp = await api.tx(txid);
     st().updateGraph((g) => mergeTx(g, resp));
     st().select(txNodeId(txid));
-    return resp;
-  });
-
-export const openAddress = (address: string) =>
-  guarded(async () => {
-    const resp = await api.address(address);
-    st().updateGraph((g) => addNodes(g, [addressNode(address, resp.info)]));
-    st().select(addrNodeId(address));
     return resp;
   });
 
