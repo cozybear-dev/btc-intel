@@ -34,6 +34,13 @@ Seeds:
 
 Trace **backward** from the seizure address to reach the theft-era wallets: `btcintel trace bc1qazcm763858nkj2dj986etajv6wquslv8uxwczt --backward --hops 4 --max-calls 400`. The address has 183 transactions, so expect the call budget to bound the result.
 
+**Dogfood traces (2026-09-26).** Run with `--hops 4 --max-calls 300` against mempool.space, with tags imported from mining pools, OFAC, GraphSense and ransomwhe.re. Taint is haircut unless noted.
+
+- The address seed does not reach the theft-era wallets: `btcintel trace bc1qazcm763858nkj2dj986etajv6wquslv8uxwczt --backward --hops 4 --max-calls 300` starts from the address's newest 50 transactions (`max_address_txs`), which are all small deposits made after the seizure, and ends at 13 `max_hops` and 37 `min_value` stops holding under 0.0005 BTC each.
+- The seizure is nine receipts of 2,000–15,000 BTC on 2022-02-01 (84,500 BTC together; for example `9d069942…ffb3`, 15,000 BTC). Seed a backward trace from one of them: `btcintel trace 9d06994238d0de958033f42db39a6d2cc0de35e84be0ed080e41f017f02dffb3 --backward --hops 4 --max-calls 300`. It hits the 200-transaction cap (incomplete, `max_txs`) inside P2SH wallets used in June–August 2016, such as `36FwMjBRMm1Jp6PZoS2qb7zo33a5AT1naW` (2,038.7 BTC at hop 4) and `3HNSiAq7wFDaPsYDcUxNSRMD78qVcYKicw` (337.8 BTC).
+- This trace exposed a false positive in [H-CJ-GENERIC](../heuristics/h-cj-generic.md): 2016 batch payouts from these wallets (for example `9ffe06de…a13d`, 13 inputs from one address) were classified as CoinJoins and stopped the trace. The single-actor guard and the output-structure bound now reject them, and four are regression fixtures.
+- None of these addresses has a tag in the imported sets, so no `labeled` exit is reached; attributing the 2016 wallets needs analyst tags.
+
 ## Case examples
 
 Most of the loot was never laundered; private keys held in cloud storage enabled the recovery [doj-bitfinex-2022]. Darknet markets act as custodial mixers.

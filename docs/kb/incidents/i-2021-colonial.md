@@ -33,6 +33,14 @@ Seeds:
 
 Trace **backward** from the affiliate address to the ransom payment: `btcintel trace bc1qq2euq8pw950klpjcawuy4uj39ym43hs6cfsegq --backward --hops 4`. Trace forward from the 5.9-BTC transaction to follow the unseized portion.
 
+**Dogfood traces (2026-09-26).** Run with `--hops 4 --max-calls 300` against mempool.space, with tags imported from mining pools, OFAC, GraphSense and ransomwhe.re. Taint is haircut unless noted.
+
+- Backward from the affiliate address reaches the ransom wallet: `btcintel trace bc1qq2euq8pw950klpjcawuy4uj39ym43hs6cfsegq --backward --hops 4 --max-calls 300` (78 transactions, complete) ends at hop 4 with 63.69 BTC of taint on `15JFh88FcE4WL6qeMLgX5VEAFCbRXjc9fr`. That address received 75.0003 BTC at 2021-05-08 17:12 UTC (`6a798026…24a2`) and sent it on 35 minutes later (`915fb4f0…bd62`), matching the ~75 BTC ransom of 8 May.
+- The affiliate address received 69.6042 BTC on 2021-05-28 (`daf38c7b…69d9`). The seizure transaction `943f2d57…cf7a` (2021-06-07 17:45 UTC) moved 63.7 BTC and returned 5.9042 BTC as change to the same address, which `280c5f96…6369` moved out eight minutes later.
+- Forward from `280c5f96…` (`btcintel trace 280c5f96397b9502b99703842712b78fda84f1a0faabf826f683448082f46369 --hops 4 --max-calls 300`; 41 transactions, 5,442 addresses because one hop is a large batch) reaches one labeled exit, `bc1qm34lsc65zpw79lxes69zkqmk6ee3ewf0j77s3h` (exchange, "binance reserve wallets BTC", 0.0108 BTC). The largest remainder, 3.77 BTC, sits at `bc1q8y9y3sq25hfnj0mysy0vf9z379ny88nagv0jyr` at hop 4; `--peel` follows the same remainder and records 49 peel-offs.
+- An earlier run stopped at `503d74c4…70e9` as a generic CoinJoin; it is a 223-output batch payout, and the corrected [H-CJ-GENERIC](../heuristics/h-cj-generic.md) rule no longer flags it.
+- Neither the ransom wallet nor the affiliate address is tagged in the imported sets (including ransomwhe.re).
+
 ## Case examples
 
 Ransom proceeds are traceable while they remain on chain; seizure depended on key access, not only on tracing.
