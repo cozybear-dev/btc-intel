@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-export type Route = { view: "graph" } | { view: "kb"; path: string };
+export type Route = { view: "graph" } | { view: "kb"; path: string } | { view: "analysis"; address: string };
 
 export function parseHash(hash: string): Route {
   const h = hash.replace(/^#\/?/, "");
@@ -8,11 +8,16 @@ export function parseHash(hash: string): Route {
     const path = h.slice(3);
     return { view: "kb", path: path ? decodeURIComponent(path) : "index.md" };
   }
+  if (h.startsWith("analysis/") && h.length > "analysis/".length) {
+    return { view: "analysis", address: decodeURIComponent(h.slice("analysis/".length)) };
+  }
   return { view: "graph" };
 }
 
 export function routeToHash(route: Route): string {
-  return route.view === "kb" ? `#/kb/${route.path}` : "#/graph";
+  if (route.view === "kb") return `#/kb/${route.path}`;
+  if (route.view === "analysis") return `#/analysis/${encodeURIComponent(route.address)}`;
+  return "#/graph";
 }
 
 function subscribe(callback: () => void) {

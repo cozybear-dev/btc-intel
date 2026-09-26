@@ -1,10 +1,10 @@
 import { create } from "zustand";
-import type { JobStatus } from "../api/types";
+import type { AnalysisSections, Depth, JobStatus } from "../api/types";
 import { type GraphModel, emptyGraph } from "../graph/model";
 
 export interface JobState {
   id: string;
-  kind: "trace" | "cluster";
+  kind: "trace" | "cluster" | "analysis";
   status: JobStatus;
   nodes: number;
   stops: number;
@@ -12,6 +12,8 @@ export interface JobState {
   reason: string | null;
   calls: number | null;
 }
+
+export interface AnalysisState { address: string; depth: Depth; sections: AnalysisSections; markdown: string | null }
 
 interface Data {
   graph: GraphModel;
@@ -25,6 +27,7 @@ interface Data {
   busy: number;
   error: string | null;
   message: string | null;
+  analysis: AnalysisState | null;
 }
 
 export interface WorkbenchState extends Data {
@@ -42,11 +45,14 @@ export interface WorkbenchState extends Data {
   setNotes: (notes: string) => void;
   markClean: () => void;
   reset: () => void;
+  setAnalysis: (analysis: AnalysisState | null) => void;
+  patchAnalysis: (patch: Partial<AnalysisState>) => void;
+  patchSections: (patch: AnalysisSections) => void;
 }
 
 const initial = (): Data => ({
   graph: emptyGraph(), selected: null, groupClusters: true, caseId: null, caseName: "", notes: "",
-  dirty: false, job: null, busy: 0, error: null, message: null,
+  dirty: false, job: null, busy: 0, error: null, message: null, analysis: null,
 });
 
 export const useWorkbench = create<WorkbenchState>()((set) => ({
@@ -66,4 +72,8 @@ export const useWorkbench = create<WorkbenchState>()((set) => ({
   setNotes: (notes) => set({ notes, dirty: true }),
   markClean: () => set({ dirty: false }),
   reset: () => set(initial()),
+  setAnalysis: (analysis) => set({ analysis }),
+  patchAnalysis: (patch) => set((s) => (s.analysis ? { analysis: { ...s.analysis, ...patch } } : {})),
+  patchSections: (patch) =>
+    set((s) => (s.analysis ? { analysis: { ...s.analysis, sections: { ...s.analysis.sections, ...patch } } } : {})),
 }));

@@ -127,7 +127,7 @@ export interface GraphNode { id: string; kind: NodeKind; label: string; data: Re
 export interface GraphEdge { id: string; source: string; target: string; value: number; taint: number }
 export type StopReason =
   | "unspent" | "labeled" | "coinjoin" | "max_hops" | "min_value" | "max_txs" | "coinbase" | "peel_off";
-export interface Stop { node: string; reason: StopReason; taint: number; detail: string }
+export interface Stop { node: string; reason: StopReason; taint: number; detail: string; hops?: number | null }
 
 export interface TracePolicy {
   direction: "forward" | "backward";
@@ -160,8 +160,9 @@ export type JobEvent = { seq: number } & (
   | { type: "edges"; items: GraphEdge[] }
   | { type: "stop"; item: Stop }
   | { type: "done"; incomplete: boolean; reason: string | null; calls_used: number }
-  | { type: "progress"; visited?: number; queued?: number; size?: number; calls?: number }
+  | { type: "progress"; visited?: number; queued?: number; size?: number; calls?: number; stage?: string }
   | { type: "status"; status: JobStatus; error: string | null }
+  | ({ type: "section" } & SectionEvent)
 );
 export interface JobInfo<T = unknown> {
   id: string;
@@ -222,4 +223,43 @@ export interface Incident {
 export interface Category {
   id: string; kind: "entity" | "abuse"; name: string; risk: RiskLevel; gs_concepts: string[];
   stop_trace: boolean; description: string;
+}
+
+export type Depth = "quick" | "deep";
+export interface FingerprintSummary { signed_txs: number; signature: string | null; share: number; traits: Record<string, unknown> }
+export interface Profile {
+  address: string; address_type: string | null; stats: AddressStats; info: AddressInfo;
+  txs_seen: number; history_complete: boolean; first_seen: number | null; last_seen: number | null;
+  longest_gap_days: number | null; received_txs: number; sent_txs: number; received_external: number;
+  reused: boolean; behaviour: Record<string, number>; fingerprint: FingerprintSummary;
+}
+export interface ClusterSummary {
+  root: string; size: number; partial: boolean; capped: boolean;
+  conflicts: { labels: string[]; addresses: string[] }[];
+  top_labels: { label: string; category: string; abuse: string | null; count: number }[];
+  calls_used: number; error: string | null;
+}
+export type BucketKind = "labeled" | "own_cluster" | "coinjoin" | "unspent" | "coinbase" | "limits" | "remainder";
+export interface Bucket {
+  kind: BucketKind; key: string; label: string; risk: RiskLevel; source: string | null;
+  amount: number; share: number; min_hops: number | null; nodes: string[];
+}
+export interface Exposure {
+  direction: "backward" | "forward"; total: number; buckets: Bucket[]; resolved_share: number;
+  incomplete: boolean; reason: string | null; calls_used: number; error: string | null;
+}
+export interface Reason { level: RiskLevel; rule: string; text: string }
+export interface Verdict { level: RiskLevel; final: boolean; low_confidence: boolean; coverage: string; reasons: Reason[] }
+export interface AnalysisSections {
+  profile?: Profile; cluster?: ClusterSummary; sources?: Exposure; destinations?: Exposure; verdict?: Verdict;
+}
+export type SectionEvent =
+  | { name: "profile"; data: Profile }
+  | { name: "cluster"; data: ClusterSummary }
+  | { name: "sources"; data: Exposure }
+  | { name: "destinations"; data: Exposure }
+  | { name: "verdict"; data: Verdict };
+export interface AnalysisReport {
+  address: string; depth: Depth; generated_at: number; profile: Profile; cluster: ClusterSummary | null;
+  sources: Exposure | null; destinations: Exposure | null; verdict: Verdict; calls_used: number; markdown: string;
 }

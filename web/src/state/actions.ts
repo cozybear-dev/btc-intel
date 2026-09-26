@@ -1,11 +1,15 @@
 import { ApiError, api } from "../api/client";
 import { subscribeJob } from "../api/sse";
-import type { Category, NewTag, RiskLevel, SearchResponse, TracePolicy, TraceSeed } from "../api/types";
+import type {
+  AnalysisReport, AnalysisSections, Category, Depth, NewTag, RiskLevel, SearchResponse, TracePolicy, TraceSeed,
+} from "../api/types";
 import {
   addNodes, addTagToNode, addrNodeId, addressNode, applyJobEvent, emptyGraph, fromSaved, mergeTx,
   setClusterForAddresses, toSaved, txNodeId,
 } from "../graph/model";
-import { useWorkbench } from "./store";
+import { shortAddr } from "../lib/format";
+import { navigate } from "../lib/route";
+import { type JobState, useWorkbench } from "./store";
 
 export const EXPAND_LIMIT = 25;
 const RISK_ORDER: RiskLevel[] = ["none", "low", "medium", "high", "severe"];
@@ -41,7 +45,7 @@ export async function search(q: string): Promise<SearchResponse | undefined> {
   if (!res) return undefined;
   if (res.kind === "txid") await openTx(res.query);
   else if (res.kind === "outpoint") await openTx(res.query.split(":")[0]);
-  else if (res.kind === "address") await openAddress(res.query);
+  else if (res.kind === "address") navigate({ view: "analysis", address: res.query });
   else if (!res.tags?.length) st().setMessage(`No transaction, address or tag matches "${q}"`);
   return res;
 }
@@ -106,7 +110,7 @@ function detachJob(cancel: boolean) {
   st().setJob(null);
 }
 
-function listen(jobId: string, kind: "trace" | "cluster", onDone?: () => Promise<void>) {
+function listen(jobId: string, kind: JobState["kind"], onDone?: () => Promise<void>) {
   unsubscribe?.();
   const token = {};
   activeJob = token;
@@ -117,8 +121,10 @@ function listen(jobId: string, kind: "trace" | "cluster", onDone?: () => Promise
       st().updateGraph((g) => applyJobEvent(g, e));
       const g = st().graph;
       st().patchJob({ nodes: Object.keys(g.nodes).length, stops: g.stops.length });
+    } else if (e.type === "section") {
+      st().patchSections({ [e.name]: e.data } as AnalysisSections);
     } else if (e.type === "progress") {
-      st().patchJob({ calls: e.calls ?? null, nodes: e.size ?? 0 });
+      st().patchJob({ calls: e.calls ?? null, ...(e.size !== undefined ? { nodes: e.size } : {}) });
     } else if (e.type === "done") {
       st().patchJob({ reason: e.reason, calls: e.calls_used });
       if (e.incomplete) st().setMessage(`Partial result: ${e.reason ?? "stopped early"}`);
@@ -134,6 +140,41 @@ export async function startTrace(seed: TraceSeed, policy: Partial<TracePolicy>) 
   st().setMessage(null);
   const res = await guarded(() => api.startTrace(seed, policy));
   if (res) listen(res.job_id, "trace");
+}
+
+/** Unsaved work that a new analysis would discard: edits to a saved case or a hand-built graph.
+ *  A fresh analysis graph can be regenerated, so it doesn't count. */
+export function hasUnsavedWork(): boolean {
+  const s = st();
+  return s.dirty && (s.caseId !== null || s.analysis === null);
+}
+
+/** Run the automatic analysis of an address as a fresh investigation. Returns false when the user
+ *  chose to keep their unsaved work. */
+export async function startAnalysis(address: string, depth: Depth = "quick"): Promise<boolean> {
+  if (hasUnsavedWork() && !window.confirm("Start a new analysis? Unsaved changes to the current investigation will be lost.")) {
+    return false;
+  }
+  detachJob(true);
+  st().reset();
+  st().setAnalysis({ address, depth, sections: {}, markdown: null });
+  const res = await guarded(() => api.analyze(address, depth));
+  if (res) {
+    const jobId = res.job_id;
+    listen(jobId, "analysis", async () => {
+      const info = await api.job<AnalysisReport>(jobId).catch(() => null);
+      if (info?.result && st().job?.id === jobId) st().patchAnalysis({ markdown: info.result.markdown });
+    });
+  }
+  return true;
+}
+
+export async function saveAnalysisAsCase() {
+  const s = st();
+  if (!s.analysis) return undefined;
+  if (!s.caseName.trim()) st().setCaseName(`Analysis of ${shortAddr(s.analysis.address)}`);
+  if (!s.notes.trim() && s.analysis.markdown) st().setNotes(s.analysis.markdown);
+  return saveCase();
 }
 
 export async function cancelJob() {
@@ -188,6 +229,7 @@ export const loadCase = (id: string) =>
   guarded(async () => {
     const c = await api.getCase(id);
     detachJob(true);
+    st().setAnalysis(null);
     const graph = fromSaved(c.graph);
     st().setCase({ id: c.id, name: c.name, notes: c.notes, graph: graph ?? emptyGraph() });
     st().markClean();

@@ -1,5 +1,5 @@
 import type {
-  AddressResponse, AddressTxsResponse, Case, CaseSummary, ClusterResponse, JobInfo, NewTag, Outspend,
+  AddressResponse, AddressTxsResponse, Case, CaseSummary, ClusterResponse, Depth, JobInfo, NewTag, Outspend,
   PeelChain, SearchResponse, Tag, TracePolicy, TraceSeed, TxResponse,
 } from "./types";
 
@@ -45,6 +45,7 @@ export const api = {
   startTrace: (seed: TraceSeed, policy: Partial<TracePolicy>) =>
     request<{ job_id: string }>("/trace", post({ seed, policy })),
   peel: (txid: string, maxSteps = 50) => request<PeelChain>("/peel", post({ txid, max_steps: maxSteps })),
+  analyze: (address: string, depth: Depth = "quick") => request<{ job_id: string }>("/analyze", post({ address, depth })),
   job: <T>(id: string) => request<JobInfo<T>>(`/jobs/${id}`),
   cancelJob: (id: string) => request<{ cancelled: boolean }>(`/jobs/${id}`, { method: "DELETE" }),
   cluster: (address: string) => request<ClusterResponse>(`/cluster/${address}`),

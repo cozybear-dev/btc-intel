@@ -18,6 +18,7 @@ vi.mock("../api/client", async () => {
       search: vi.fn(), tx: vi.fn(), outspends: vi.fn(), address: vi.fn(), startTrace: vi.fn(), peel: vi.fn(),
       cancelJob: vi.fn(), expandCluster: vi.fn(), cluster: vi.fn(), addTag: vi.fn(), kb: vi.fn(),
       createCase: vi.fn(), updateCase: vi.fn(), getCase: vi.fn(), deleteCase: vi.fn(), watch: vi.fn(),
+      analyze: vi.fn(), job: vi.fn(),
     },
   };
 });
@@ -140,4 +141,62 @@ test("loading a case detaches a running trace so its events cannot leak into tha
   expect(s.dirty).toBe(false);
   expect(s.job).toBeNull();
   expect(mocked.cancelJob).toHaveBeenCalledWith("j9");
+});
+
+test("search for an address opens its analysis page", async () => {
+  mocked.search.mockResolvedValue({ kind: "address", query: "bc1qaddr" });
+  await actions.search("bc1qaddr");
+  expect(window.location.hash).toBe("#/analysis/bc1qaddr");
+});
+
+test("startAnalysis streams sections and graph events, then fetches the markdown", async () => {
+  mocked.analyze.mockResolvedValue({ job_id: "a1" });
+  mocked.job.mockResolvedValue({ id: "a1", kind: "analysis", status: "done", error: null, events: 5, result: { markdown: "# Address analysis" } });
+  expect(await actions.startAnalysis("bc1qaddr")).toBe(true);
+  expect(mocked.analyze).toHaveBeenCalledWith("bc1qaddr", "quick");
+  const emit = handlers.onEvent!;
+  emit({ seq: 0, type: "section", name: "verdict", data: { level: "severe", final: false, low_confidence: false, coverage: "Tracing in progress…", reasons: [] } });
+  emit({ seq: 1, type: "nodes", items: [{ id: "addr:bc1qaddr", kind: "address", label: "bc1qaddr", data: {} }] });
+  emit({ seq: 2, type: "progress", stage: "cluster", calls: 12 });
+  emit({ seq: 3, type: "done", incomplete: false, reason: null, calls_used: 40 });
+  emit({ seq: 4, type: "status", status: "done", error: null });
+  await vi.waitFor(() => expect(useWorkbench.getState().analysis?.markdown).toBe("# Address analysis"));
+  const s = useWorkbench.getState();
+  expect(s.analysis?.sections.verdict?.level).toBe("severe");
+  expect(s.graph.nodes["addr:bc1qaddr"]).toBeDefined();
+  expect(s.job).toMatchObject({ kind: "analysis", status: "done", calls: 40, nodes: 1 });
+});
+
+test("a new analysis asks before discarding a hand-built graph, but not a previous analysis", async () => {
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+  mocked.tx.mockResolvedValue(txResponse);
+  mocked.cancelJob.mockResolvedValue({ cancelled: true });
+  await actions.openTx(TXID); // hand-built: dirty, no case, no analysis
+  expect(await actions.startAnalysis("bc1qaddr")).toBe(false);
+  expect(mocked.analyze).not.toHaveBeenCalled();
+  expect(useWorkbench.getState().graph.nodes[`tx:${TXID}`]).toBeDefined();
+  confirm.mockReturnValue(true);
+  mocked.analyze.mockResolvedValue({ job_id: "a2" });
+  expect(await actions.startAnalysis("bc1qaddr")).toBe(true);
+  expect(confirm).toHaveBeenCalledTimes(2);
+  const first = handlers.onEvent!;
+  first({ seq: 0, type: "nodes", items: [{ id: "addr:x", kind: "address", label: "x", data: {} }] });
+  expect(useWorkbench.getState().dirty).toBe(true);
+  expect(await actions.startAnalysis("bc1qother", "deep")).toBe(true); // an analysis graph: no prompt
+  expect(confirm).toHaveBeenCalledTimes(2);
+  expect(mocked.cancelJob).toHaveBeenCalledWith("a2");
+  first({ seq: 1, type: "nodes", items: [{ id: "addr:leak", kind: "address", label: "leak", data: {} }] });
+  const s = useWorkbench.getState();
+  expect(s.graph.nodes["addr:leak"]).toBeUndefined();
+  expect(s.analysis).toMatchObject({ address: "bc1qother", depth: "deep" });
+  confirm.mockRestore();
+});
+
+test("saving an analysis names the case and puts the report into empty notes", async () => {
+  mocked.analyze.mockResolvedValue({ job_id: "a3" });
+  await actions.startAnalysis("bc1qverylongaddress0000");
+  useWorkbench.getState().patchAnalysis({ markdown: "# Report" });
+  mocked.createCase.mockResolvedValue({ id: "c1", name: "Analysis of bc1qvery…0000", notes: "# Report", graph: {}, created_at: 1, updated_at: 1, watch: [] });
+  await actions.saveAnalysisAsCase();
+  expect(mocked.createCase).toHaveBeenCalledWith(expect.objectContaining({ name: "Analysis of bc1qvery…0000", notes: "# Report" }));
 });
