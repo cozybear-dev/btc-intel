@@ -1,1 +1,413 @@
-[]
+- id: H-CIOH
+  name: Common-input-ownership
+  family: clustering
+  status: planned
+  confidence: high
+  summary: >-
+    All inputs spent by one transaction are controlled by one entity, because each input needs its
+    owner's signature. Unioning input addresses across transactions yields address clusters
+    (wallets / entities).
+  signals: ["≥2 distinct input addresses", "transaction is not a CoinJoin, PayJoin or other multi-party construction"]
+  false_positives:
+    - CoinJoin (Wasabi, Whirlpool, JoinMarket) and PayJoin/Stowaway deliberately combine inputs of several owners
+    - Collaborative transactions such as dual-funded Lightning channel opens and splices
+    - Custodial services co-spending customer deposits (one controller, many beneficial owners)
+  refs: [nakamoto2008, reid2011, meiklejohn2013, androulaki2013]
+  kb: heuristics/h-cioh.md
+- id: H-REUSE
+  name: Address reuse
+  family: clustering
+  status: kb_only
+  confidence: high
+  summary: >-
+    Receiving several payments at one address links them to one owner and exposes balance and
+    counterparties. In btc-intel reuse is visible directly because addresses are graph nodes.
+  signals: ["same address appears as output in more than one transaction"]
+  false_positives: ["shared deposit addresses of custodial services", "donation addresses posted publicly"]
+  refs: [nakamoto2008, bitcoinwiki-privacy]
+  kb: heuristics/h-reuse.md
+- id: H-PUBKEY
+  name: Public-key reuse across scripts
+  family: clustering
+  status: planned
+  confidence: medium
+  summary: >-
+    The same public key revealed in different script templates (P2PKH, P2WPKH, P2SH-P2WPKH, multisig)
+    links those addresses; cosigner keys shared across multisig scripts link a service's wallets.
+  signals: ["identical pubkey pushed in scriptSig/witness of inputs spending different addresses", "shared key in multisig redeem/witness scripts"]
+  false_positives: ["third-party cosigners (e.g. collaborative-custody providers) shared by unrelated users"]
+  refs: [bitcoinwiki-privacy]
+  kb: heuristics/h-pubkey.md
+- id: H-CHG
+  name: Change-output detection (vote ensemble)
+  family: change
+  status: planned
+  confidence: medium
+  summary: >-
+    In a typical payment the sender pays one output and returns the remainder to a change address
+    it controls. Identifying change extends clusters and lets tracing follow the sender's remaining
+    funds. Independent signals are combined as weighted log-odds votes.
+  signals: ["see child heuristics H-CHG-*"]
+  false_positives: ["batched payments with no change", "wallets that randomise script type, ordering and amounts", "PayJoin"]
+  refs: [meiklejohn2013, bitcoinwiki-privacy, kappos2022, moser2022]
+  kb: heuristics/h-chg.md
+- id: H-CHG-SELF
+  parent: H-CHG
+  name: Change returned to an input address
+  family: change
+  status: planned
+  confidence: high
+  summary: An output paying back to one of the transaction's input addresses is change.
+  signals: ["output address ∈ input addresses"]
+  false_positives: ["shared/custodial addresses used by several parties"]
+  refs: [bitcoinwiki-privacy]
+  kb: heuristics/h-chg-self.md
+- id: H-CHG-SCRIPT
+  parent: H-CHG
+  name: Script-type match
+  family: change
+  status: planned
+  confidence: medium
+  summary: >-
+    Wallets usually generate change with the same script type as their inputs; when exactly one
+    output matches the inputs' script type, it is likely change.
+  signals: ["all inputs share script type T", "exactly one output of type T"]
+  false_positives: ["payee uses the same address type as the payer", "wallets that deliberately match the payee's type"]
+  refs: [bitcoinwiki-privacy, moser2022]
+  kb: heuristics/h-chg-script.md
+- id: H-CHG-ROUND
+  parent: H-CHG
+  name: Round payment amount
+  family: change
+  status: planned
+  confidence: medium
+  summary: >-
+    Payment amounts are often round in BTC (or in fiat at the time); when one output is round and
+    the other is not, the non-round output is likely change.
+  signals: ["output value has ≥5 trailing zero digits in satoshis", "other output has ≤3"]
+  false_positives: ["fiat-denominated invoices paid in exact BTC amounts", "exchange withdrawals of round amounts by the user to themselves"]
+  refs: [bitcoinwiki-privacy, androulaki2013]
+  kb: heuristics/h-chg-round.md
+- id: H-CHG-UNNECESSARY
+  parent: H-CHG
+  name: Unnecessary input
+  family: change
+  status: planned
+  confidence: medium
+  summary: >-
+    If an output is smaller than the smallest input, the wallet did not need all inputs to pay it,
+    so that output is likely change and the larger output is the payment.
+  signals: ["≥2 inputs", "exactly one output smaller than min(input values)"]
+  false_positives: ["privacy wallets adding extra inputs on purpose (PayJoin, Stonewall)", "UTXO consolidation during payment"]
+  refs: [bitcoinwiki-privacy]
+  kb: heuristics/h-chg-unnecessary.md
+- id: H-CHG-FPCONT
+  parent: H-CHG
+  name: Fingerprint continuity
+  family: change
+  status: planned
+  confidence: medium
+  summary: >-
+    Change is later spent by the same wallet software, so the transaction spending the change
+    shares the current transaction's fingerprint (H-FP); payment outputs are usually spent by other
+    wallets.
+  signals: ["spending transaction of output has same fingerprint signature as this transaction"]
+  false_positives: ["payer and payee use the same popular wallet (e.g. Bitcoin Core)"]
+  refs: [misra2024, kappos2022]
+  kb: heuristics/h-chg-fpcont.md
+- id: H-CHG-FRESH
+  parent: H-CHG
+  name: One-time (fresh) change address
+  family: change
+  status: planned
+  confidence: medium
+  summary: >-
+    Change goes to a never-before-seen address, while the payee's address may have been used
+    before. Requires first-seen ordering of addresses (needs a local full index; spec Phase 3).
+  signals: ["output address first appears in this transaction", "other output address appeared earlier"]
+  false_positives: ["payees using fresh invoice addresses (most modern wallets)"]
+  refs: [meiklejohn2013]
+  kb: heuristics/h-chg-fresh.md
+- id: H-CHG-POSITION
+  parent: H-CHG
+  name: Output ordering
+  family: change
+  status: planned
+  confidence: low
+  summary: Some wallets place change at a fixed output index; BIP69 lexicographic ordering removes this signal.
+  signals: ["wallet-specific change position combined with H-FP wallet identification"]
+  false_positives: ["BIP69 or randomised ordering"]
+  refs: [bip69, bitcoinwiki-privacy]
+  kb: heuristics/h-chg-position.md
+- id: H-FP
+  name: Wallet fingerprinting
+  family: fingerprint
+  status: planned
+  confidence: medium
+  summary: >-
+    Transaction fields and construction choices differ between wallet software: nVersion,
+    nLockTime (anti-fee-sniping), nSequence/RBF signalling, input/output ordering (BIP69),
+    low-R signature grinding, script types, fee-rate rounding. Fingerprints narrow the wallet used
+    and link transactions made by the same wallet.
+  signals: ["nVersion", "nLockTime zero/height/anti-fee-sniping", "nSequence values and RBF signalling", "BIP69 ordering", "low-R signatures only", "input/output script types", "uncompressed pubkeys", "integer fee rate"]
+  false_positives: ["popular wallets share defaults", "fingerprint mimicry by privacy-aware tools"]
+  refs: [misra2024, dfrws2025tumbler, bip69, bip125]
+  kb: heuristics/h-fp.md
+- id: H-CJ
+  name: CoinJoin detection
+  family: coinjoin
+  status: planned
+  confidence: high
+  summary: >-
+    CoinJoins combine inputs of many users and create equal-value outputs so outputs cannot be
+    linked to inputs. Detection suppresses false clustering (H-CIOH) and flags obfuscation.
+  signals: ["see child heuristics H-CJ-*"]
+  false_positives: ["batched exchange payouts with repeated amounts", "multi-party but non-privacy transactions"]
+  refs: [popets2026coinjoin, crocsmuni-coinjoin, meiklejohn2013]
+  kb: heuristics/h-cj.md
+- id: H-CJ-WASABI2
+  parent: H-CJ
+  name: WabiSabi (Wasabi 2.x and forks)
+  family: coinjoin
+  status: planned
+  confidence: high
+  summary: >-
+    Coordinator CoinJoins by Wasabi 2.x, Ginger and community coordinators (e.g. kruw.io): ≥10
+    (typically 20–300) segwit v0/v1 inputs, most outputs in the standard denomination set, several
+    equal-value groups, nVersion 1, nLockTime 0.
+  signals: ["≥10 inputs, all v0_p2wpkh or v1_p2tr", "≥75% of outputs in standard denominations (1/2/5×10ⁿ, 2ⁿ, 3ⁿ, 2×3ⁿ sats, ≥5000)", "≥3 equal-value groups", "nVersion 1 and nLockTime 0"]
+  false_positives: ["large batched payments that happen to use round denominations"]
+  refs: [popets2026coinjoin, crocsmuni-coinjoin]
+  kb: heuristics/h-cj-wasabi2.md
+- id: H-CJ-WASABI1
+  parent: H-CJ
+  name: ZeroLink (Wasabi 1.x)
+  family: coinjoin
+  status: planned
+  confidence: high
+  summary: >-
+    Wasabi 1.x CoinJoins (2018–2024): one large equal-value group near 0.1 BTC (anonymity set
+    typically 50–100), P2WPKH only, coordinator fee output, nVersion 1.
+  signals: ["largest equal-output group ≥10 with value 0.07–0.13 BTC", "all outputs P2WPKH", "nVersion 1"]
+  false_positives: ["other ZeroLink-style coordinators"]
+  refs: [popets2026coinjoin, crocsmuni-coinjoin]
+  kb: heuristics/h-cj-wasabi1.md
+- id: H-CJ-WHIRLPOOL
+  parent: H-CJ
+  name: Whirlpool mix (Samourai / Ashigaru)
+  family: coinjoin
+  status: planned
+  confidence: high
+  summary: >-
+    Whirlpool mixes (Samourai 2019–2024, Ashigaru 2025–): equal number of inputs and outputs (5–10),
+    all outputs exactly a pool denomination (100k, 1M, 2.5M, 5M, 25M, 50M sats), inputs equal to the
+    denomination (remix) or denomination plus a miner-fee allowance (premix).
+  signals: ["n_in == n_out ∈ [5,10]", "all outputs == pool denomination", "all inputs within [D, 1.1·D + 20000]"]
+  false_positives: []
+  refs: [crocsmuni-coinjoin, ashigaru-whirlpool-2025, doj-samourai-2024]
+  kb: heuristics/h-cj-whirlpool.md
+- id: H-CJ-WHIRLPOOL-TX0
+  parent: H-CJ
+  name: Whirlpool Tx0 (premix)
+  family: coinjoin
+  status: planned
+  confidence: high
+  summary: >-
+    Single-owner transaction preparing coins for Whirlpool: an OP_RETURN, a coordinator fee output,
+    one or more equal "premix" outputs slightly above a pool denomination, and unmixed ("toxic")
+    change. Unlike mixes, CIOH still applies to a Tx0.
+  signals: ["exactly one OP_RETURN", "≥1 equal outputs with value in (D, 1.1·D + 20000] for a pool D"]
+  false_positives: []
+  refs: [crocsmuni-coinjoin, doj-samourai-2024]
+  kb: heuristics/h-cj-whirlpool-tx0.md
+- id: H-CJ-JOINMARKET
+  parent: H-CJ
+  name: JoinMarket
+  family: coinjoin
+  status: planned
+  confidence: medium
+  summary: >-
+    Peer-to-peer maker/taker CoinJoins: n ≥ 3 equal outputs plus up to one change output per
+    participant, typically nVersion 2 with anti-fee-sniping nLockTime and nSequence 0xfffffffe,
+    no coordinator fee output.
+  signals: ["largest equal group n ≥ 3", "n_in ≥ n", "n_out ≤ 2n + 1", "no OP_RETURN"]
+  false_positives: ["batched payouts with ≥3 identical amounts"]
+  refs: [crocsmuni-coinjoin, atlas21-coinjoin-2026]
+  kb: heuristics/h-cj-joinmarket.md
+- id: H-CJ-STONEWALL
+  parent: H-CJ
+  name: Stonewall / Stonewall-X2
+  family: coinjoin
+  status: planned
+  confidence: low
+  summary: >-
+    Samourai/Ashigaru transaction with 4 outputs of which exactly one pair is equal; may be single-
+    party (Stonewall) or two-party (Stonewall-X2), which makes CIOH unsafe.
+  signals: ["n_out == 4", "exactly one equal-value pair", "n_in ≥ 2"]
+  false_positives: ["ordinary 4-output transactions with two equal payments"]
+  refs: [doj-samourai-2024, bitcoinwiki-privacy]
+  kb: heuristics/h-cj-stonewall.md
+- id: H-CJ-GENERIC
+  parent: H-CJ
+  name: Generic equal-output multi-input transaction
+  family: coinjoin
+  status: planned
+  confidence: low
+  summary: ≥2 inputs and ≥2 equal-value outputs; weak indicator of a manual or unknown CoinJoin.
+  signals: ["largest equal group ≥ 2", "n_in ≥ 2"]
+  false_positives: ["batched payments with repeated amounts"]
+  refs: [meiklejohn2013, crocsmuni-coinjoin]
+  kb: heuristics/h-cj-generic.md
+- id: H-CJ-POST
+  name: Post-mix demixing
+  family: coinjoin
+  status: planned
+  confidence: medium
+  summary: >-
+    Mixed coins are often re-linked after the mix: consolidating several mixed outputs, spending
+    toxic change together with mixed coins, address reuse, short remix chains, amount/timing
+    correlation. Boltzmann link-probability entropy and subset-sum analysis quantify residual
+    linkability of multi-party transactions.
+  signals: ["tx spending ≥2 outputs of the same or different CoinJoins", "tx spending CoinJoin output together with Tx0 change", "subset-sum partitions of inputs/outputs"]
+  false_positives: ["users deliberately consolidating after long remixing (still privacy loss, but deliberate)"]
+  refs: [atlas2014sudoku, laurentmt2017boltzmann, popets2026coinjoin]
+  kb: heuristics/h-cj-post.md
+- id: H-PEEL
+  name: Peel chain
+  family: pattern
+  status: planned
+  confidence: medium
+  summary: >-
+    A large balance is spent in a long chain of transactions that each peel a small payment off and
+    forward the large remainder to a fresh address. Following the large output reconstructs the
+    chain; the peels are payments or service deposits.
+  signals: ["1–2 inputs and 2 outputs", "one output ≥75% of the total output value", "the large output is spent by another peel-shaped transaction"]
+  false_positives: ["ordinary wallet spending with change looks like one peel step"]
+  refs: [meiklejohn2013, kappos2022]
+  kb: heuristics/h-peel.md
+- id: H-MOTIF-FANOUT
+  name: Fan-out / dispersal
+  family: pattern
+  status: planned
+  confidence: medium
+  summary: >-
+    Few inputs, many outputs. Uniform output amounts suggest deliberate dispersal/structuring
+    (e.g. Bybit proceeds dispersed to thousands of addresses); varied amounts suggest service batch
+    payouts.
+  signals: ["n_out ≥ 10 and n_in ≤ 3", "coefficient of variation of output values < 0.2 → uniform dispersal"]
+  false_positives: ["exchange withdrawal batches", "mining pool payouts"]
+  refs: [trm-bybit-2025, meiklejohn2013]
+  kb: heuristics/h-motif-fanout.md
+- id: H-MOTIF-FANIN
+  name: Fan-in / consolidation
+  family: pattern
+  status: planned
+  confidence: medium
+  summary: >-
+    Many inputs, one or two outputs. Services sweep deposit addresses; launderers consolidate
+    after dispersal; post-mix consolidation re-links mixed coins.
+  signals: ["n_in ≥ 10 and n_out ≤ 2", "not a CoinJoin"]
+  false_positives: ["routine wallet UTXO consolidation at low fees"]
+  refs: [meiklejohn2013]
+  kb: heuristics/h-motif-fanin.md
+- id: H-MOTIF-SWEEP
+  name: Mass key-compromise sweep
+  family: pattern
+  status: planned
+  confidence: medium
+  summary: >-
+    Many unrelated, long-dormant single-signature addresses are emptied within minutes into a few
+    attacker addresses — the signature of weak-key/seed compromises (LuBian 2020, Milk Sad 2023,
+    Coldcard Mk3 2026). Needs prevout ages and cross-transaction timing.
+  signals: ["burst of transactions sweeping dormant single-sig addresses into few destinations", "inputs from addresses with no prior common-input links"]
+  false_positives: ["legitimate wallet migrations by a service"]
+  refs: [coindesk-coldcard-2026, milksad-2023, arkham-lubian-2025]
+  kb: heuristics/h-motif-sweep.md
+- id: H-XCHAIN
+  name: Cross-chain exit markers
+  family: crosschain
+  status: planned
+  confidence: high
+  summary: >-
+    THORChain inbound transactions carry an OP_RETURN memo naming the destination chain, asset and
+    address (e.g. "=:ETH.ETH:0x…"); outbound transactions carry "OUT:<inbound hash>", linking both
+    chains. Omni Layer payloads mark legacy USDT. Bridges, Chainflip vaults and instant exchangers
+    are detected through address tags.
+  signals: ["OP_RETURN text parses as a THORChain memo", "OP_RETURN starts with 'omni'", "output address tagged bridge / instant_exchange"]
+  false_positives: ["arbitrary OP_RETURN text that happens to look like a memo (require CHAIN.ASSET form)"]
+  refs: [thorchain-memos, trm-bybit-2025]
+  kb: heuristics/h-xchain.md
+- id: H-CORR
+  name: Amount/time correlation across services
+  family: pattern
+  status: planned
+  confidence: medium
+  summary: >-
+    Custodial mixers and instant swappers pay out amounts equal to the deposit minus a fee within a
+    time window; matching amounts and times across the service boundary can re-link flows.
+  signals: ["payout value ≈ deposit value × (1 − fee) within Δt", "payout transaction fingerprint differs from normal service payouts"]
+  false_positives: ["high-volume services with many similar amounts"]
+  refs: [dfrws2025tumbler]
+  kb: heuristics/h-corr.md
+- id: H-COINBASE
+  name: Miner attribution
+  family: attribution
+  status: planned
+  confidence: high
+  summary: >-
+    Coinbase transactions embed pool tags in the scriptSig (e.g. "/ViaBTC/") and pay pool
+    addresses; matching against mempool's curated pool list attributes newly minted coins.
+  signals: ["coinbase scriptSig contains a known pool tag", "coinbase pays a known pool address"]
+  false_positives: ["pools that do not tag, or reuse another pool's tag"]
+  refs: [mempool-mining-pools]
+  kb: heuristics/h-coinbase.md
+- id: H-TEMPORAL
+  name: Temporal profiling
+  family: temporal
+  status: planned
+  confidence: low
+  summary: >-
+    Hour-of-day activity histograms hint at an operator's time zone; long dormancy followed by
+    sudden movement flags stolen or seized funds becoming active.
+  signals: ["transaction timestamps clustered in a daily window", "coins dormant for years then moved"]
+  false_positives: ["automated services operating around the clock", "block timestamps differ from broadcast time"]
+  refs: [androulaki2013]
+  kb: heuristics/h-temporal.md
+- id: H-TAINT
+  name: Taint analysis models
+  family: taint
+  status: planned
+  confidence: medium
+  summary: >-
+    How much of each output derives from a tainted input: poison (any tainted input taints every
+    output fully), haircut (outputs inherit the tainted fraction), FIFO (first-in-first-out mapping
+    of input value ranges to output ranges, as in Clayton's case) and TIHO (taint in highest output).
+  signals: ["n/a — a flow model applied during tracing and exposure scoring"]
+  false_positives: ["poison vastly over-taints; haircut dilutes; FIFO depends on arbitrary ordering"]
+  refs: [anderson2018, tironsakkul2019, moser2014risk]
+  kb: heuristics/h-taint.md
+- id: H-OSINT
+  name: Off-chain attribution
+  family: attribution
+  status: kb_only
+  confidence: high
+  summary: >-
+    Most labels come from outside the chain: sanctions lists, court filings, proof-of-reserves
+    disclosures, ransom notes, forum posts, and interaction (transacting with services to learn
+    their addresses).
+  signals: ["address published by an authority or the service itself", "address observed while transacting with a service"]
+  false_positives: ["stale or mistyped published addresses", "poisoned abuse reports"]
+  refs: [meiklejohn2013, ofac-sdn, graphsense-tagpacks, haslhofer2021]
+  kb: heuristics/h-osint.md
+- id: H-NETWORK
+  name: Network-layer deanonymisation
+  family: network
+  status: kb_only
+  confidence: medium
+  summary: >-
+    Observing which peer first relays a transaction can reveal the originating IP address;
+    mitigations are Tor and Dandelion-style relay. Out of scope for on-chain analysis.
+  signals: ["first-relay peer across many listening nodes"]
+  false_positives: ["Tor/VPN usage", "transaction relay through third-party broadcast services"]
+  refs: [biryukov2014, koshy2014, fanti2018]
+  kb: heuristics/h-network.md
