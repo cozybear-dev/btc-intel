@@ -62,7 +62,11 @@ class LabelLookup:
         ordered = own + inherited
         best = ordered[0] if ordered else None
         risk = max((self.taxonomy.risk_of_tag(t) for t in ordered), key=RISK_ORDER.__getitem__, default="none")
-        stop = next((t.category for t in ordered if t.category in self.stop), None)
+        # A tag stops a trace by its entity category or by its abuse (many risky tags are
+        # category "unknown" + abuse "ransomware"); among several matches the riskiest wins, so a
+        # sanctioned exchange stops as "sanctioned", not "exchange".
+        matches = [c for t in ordered for c in (t.abuse, t.category) if c in self.stop]
+        stop = max(matches, key=lambda c: RISK_ORDER[self.taxonomy.risk(c)], default=None)
         info = AddressInfo(address=address, tags=tuple(ordered), cluster=root,
                            category=best.category if best else None, label=best.label if best else None,
                            risk=risk, stop_category=stop)

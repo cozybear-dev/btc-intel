@@ -121,10 +121,13 @@ async def _forward(seed: TraceSeed, policy: TracePolicy, chain: ChainSource, lab
         out = tx.vout[n]
         if out.address is None:
             return
-        info = labels.lookup(out.address)
-        if info.stop_category:
-            g.stop(target, "labeled", amount, f"{info.stop_category}: {info.label}")
-            return
+        # A labeled seed address never stops its own trace: analysing a known address must still
+        # show where its funds went.
+        if out.address != seed.address:
+            info = labels.lookup(out.address)
+            if info.stop_category:
+                g.stop(target, "labeled", amount, f"{info.stop_category}: {info.label}", hops=hop)
+                return
         heapq.heappush(heap, (-amount, hop, next(counter), tx.txid, n))
 
     if seed.txid is not None:
@@ -142,33 +145,35 @@ async def _forward(seed: TraceSeed, policy: TracePolicy, chain: ChainSource, lab
                     if out.address == seed.address:
                         g.add_tx(tx)
                         seeded.add((tx.txid, out.n))
-                        follow(tx, out.n, float(out.value), 1)
+                        # hop 0: the address's own coins, so whoever it pays is 1 hop away
+                        # (as in backward traces, where whoever paid it is 1 hop away)
+                        follow(tx, out.n, float(out.value), 0)
 
     while heap:
         neg, hop, _, txid, vout = heapq.heappop(heap)
         amount = -neg
         node = addr_node_id(g.txs[txid].vout[vout].address or "")
         if amount < policy.min_value_sats:
-            g.stop(node, "min_value", amount)
+            g.stop(node, "min_value", amount, hops=hop)
             continue
         if hop > policy.max_hops:
-            g.stop(node, "max_hops", amount)
+            g.stop(node, "max_hops", amount, hops=hop)
             continue
         spends = await chain.get_outspends(txid)
         sp = spends[vout] if vout < len(spends) else None
         if sp is None or not sp.spent or sp.txid is None or sp.vin is None:
-            g.stop(node, "unspent", amount)
+            g.stop(node, "unspent", amount, hops=hop)
             continue
         if sp.txid not in g.txs and len(g.txs) >= policy.max_txs:
             g.truncated = True
-            g.stop(node, "max_txs", amount)
+            g.stop(node, "max_txs", amount, hops=hop)
             continue
         child = await chain.get_tx(sp.txid)
         g.add_tx(child)
         g.add_input_taint(child, sp.vin, amount)
         cj_kind = _is_stopping_coinjoin(child, policy)
         if cj_kind:
-            g.stop(tx_node_id(child.txid), "coinjoin", amount, cj_kind)
+            g.stop(tx_node_id(child.txid), "coinjoin", amount, cj_kind, hops=hop + 1)
             continue
         if policy.taint_model == "poison":
             if child.txid in poisoned:
@@ -180,7 +185,7 @@ async def _forward(seed: TraceSeed, policy: TracePolicy, chain: ChainSource, lab
             keep = remainder_output(child)
             for n, t in targets:
                 if n != keep and t > 0:
-                    g.stop(g.add_output(child, n, t), "peel_off", t)
+                    g.stop(g.add_output(child, n, t), "peel_off", t, hops=hop + 1)
             targets = [(n, t) for n, t in targets if n == keep]
         for n, t in targets:
             if t > 0:
@@ -203,7 +208,7 @@ async def _backward(seed: TraceSeed, policy: TracePolicy, chain: ChainSource, la
         for n, t in tainted.items():
             g.add_output(tx, n, t)
         if tx.is_coinbase:
-            g.stop(tx_node_id(tx.txid), "coinbase", sum(tainted.values()), "newly mined coins")
+            g.stop(tx_node_id(tx.txid), "coinbase", sum(tainted.values()), "newly mined coins", hops=1)
             return
         for i, t in sorted(taint_models.backward(policy.taint_model, tx, tainted).items()):
             if t > 0:
@@ -237,29 +242,30 @@ async def _backward(seed: TraceSeed, policy: TracePolicy, chain: ChainSource, la
             continue
         node = addr_node_id(txin.address) if txin.address else tx_node_id(txid)
         if amount < policy.min_value_sats:
-            g.stop(node, "min_value", amount)
+            g.stop(node, "min_value", amount, hops=hop)
             continue
         if hop > policy.max_hops:
-            g.stop(node, "max_hops", amount)
+            g.stop(node, "max_hops", amount, hops=hop)
             continue
-        if txin.address:
+        # As forward: the seed address's own older coins are traced through, not a labeled stop.
+        if txin.address and txin.address != seed.address:
             info = labels.lookup(txin.address)
             if info.stop_category:
-                g.stop(node, "labeled", amount, f"{info.stop_category}: {info.label}")
+                g.stop(node, "labeled", amount, f"{info.stop_category}: {info.label}", hops=hop)
                 continue
         if txin.prev_txid not in g.txs and len(g.txs) >= policy.max_txs:
             g.truncated = True
-            g.stop(node, "max_txs", amount)
+            g.stop(node, "max_txs", amount, hops=hop)
             continue
         parent = await chain.get_tx(txin.prev_txid)
         g.add_tx(parent)
         g.add_output(parent, txin.prev_vout, amount)
         if parent.is_coinbase:
-            g.stop(tx_node_id(parent.txid), "coinbase", amount, "newly mined coins")
+            g.stop(tx_node_id(parent.txid), "coinbase", amount, "newly mined coins", hops=hop + 1)
             continue
         cj_kind = _is_stopping_coinjoin(parent, policy)
         if cj_kind:
-            g.stop(tx_node_id(parent.txid), "coinjoin", amount, cj_kind)
+            g.stop(tx_node_id(parent.txid), "coinjoin", amount, cj_kind, hops=hop + 1)
             continue
         for i, t in sorted(taint_models.backward(policy.taint_model, parent, {txin.prev_vout: amount}).items()):
             if t > 0:

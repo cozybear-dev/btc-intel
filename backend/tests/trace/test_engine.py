@@ -159,3 +159,41 @@ async def test_address_seed_backward_counts_self_change_once():
     edges = {e.id: e for e in r.edges}
     assert edges[f"out:{fund.txid}:0"].taint == pytest.approx(999_000)
     assert sum(st.taint for st in r.stops if st.reason == "coinbase") <= 1_000_000
+
+
+async def test_stops_record_hops_from_an_address_seed():
+    sc = build_scenario()
+    r = await trace(TraceSeed(address=H1), TracePolicy(), chain=FakeChain(sc.txs), labels=make_labels())
+    hops = {(st.node, st.reason): st.hops for st in r.stops}
+    assert hops[(f"addr:{EX}", "labeled")] == 1  # H1 pays EX directly
+    assert hops[(f"addr:{U}", "unspent")] == 2   # H1 -> H3 -> U
+
+
+async def test_labeled_seed_address_does_not_stop_its_own_trace():
+    from btcintel.labels.store import Tag
+    sc = build_scenario()
+    labels = make_labels([Tag(address=H1, label="Known thief", category="perpetrator", abuse="theft",
+                              confidence="forensic", source="t", pack="t")],
+                         stop_categories=["perpetrator", "theft", "exchange", "mixing_service"])
+    r = await trace(TraceSeed(address=H1), TracePolicy(), chain=FakeChain(sc.txs), labels=labels)
+    assert (f"addr:{EX}", "labeled") in stops(r)
+    assert not any(st.node == f"addr:{H1}" for st in r.stops)
+
+
+async def test_labeled_seed_address_is_traced_back_through_its_own_older_coins():
+    from btcintel.labels.store import Tag
+    a = UNTAGGED
+    seed = a[1]
+    cb = mk_tx([(None, 0)], [(a[0], 1_000_000)], coinbase=True)
+    fund = mk_tx([(cb, 0)], [(seed, 999_000)])
+    spend = mk_tx([(fund, 0)], [(a[2], 500_000), (seed, 498_000)])
+    labels = make_labels([Tag(address=seed, label="Known thief", category="perpetrator", abuse="theft",
+                              confidence="forensic", source="t", pack="t")],
+                         stop_categories=["perpetrator", "theft"])
+    # FakeChain lists history in insertion order: with max_address_txs=1 only `spend` is seeded, so
+    # its input (the seed's older coins from `fund`) is reached as an ordinary input.
+    r = await trace(TraceSeed(address=seed), TracePolicy(direction="backward", max_address_txs=1, min_value_sats=1),
+                    chain=FakeChain([cb, spend, fund]), labels=labels)
+    assert not any(st.node == f"addr:{seed}" for st in r.stops)
+    coinbase = next(st for st in r.stops if st.reason == "coinbase")
+    assert coinbase.node == f"tx:{cb.txid}" and coinbase.hops == 3

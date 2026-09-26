@@ -35,6 +35,7 @@ class Stop(BaseModel):
     reason: StopReason
     taint: float = 0.0
     detail: str = ""
+    hops: int | None = None  # transactions between the seed and this endpoint (1 = direct counterparty)
 
 
 def tx_node_id(txid: str) -> str:
@@ -125,8 +126,9 @@ class GraphBuilder:
         self.edges[eid] = edge.model_copy(update={"taint": edge.taint + taint})
         self._send("edges", [self.edges[eid]])
 
-    def stop(self, node: str, reason: StopReason, taint: float = 0.0, detail: str = "") -> None:
-        stop = Stop(node=node, reason=reason, taint=round(taint, 2), detail=detail)
+    def stop(self, node: str, reason: StopReason, taint: float = 0.0, detail: str = "",
+             hops: int | None = None) -> None:
+        stop = Stop(node=node, reason=reason, taint=round(taint, 2), detail=detail, hops=hops)
         self.stops.append(stop)
         if self.emit:
             self.emit({"type": "stop", "item": stop.model_dump()})
