@@ -14,4 +14,19 @@ entities, screen addresses for risk, and study the techniques used to obfuscate 
     uv run pytest
     uv run btcintel catalog check
 
+## Web workbench
+
+    cd web && npm install && npm run build     # production bundle served by the API
+    cd ../backend && uv run btcintel serve     # http://127.0.0.1:8765
+
+Development with hot reload: run `uv run btcintel serve` and, in another shell, `cd web && npm run dev`
+(http://127.0.0.1:5173, proxies /api to the backend).
+
+- Search a txid, `txid:vout`, address or tag name.
+- Right-click nodes to expand inputs/outputs, trace, follow peel chains or expand clusters.
+- Save investigations as cases; export PNG, graph JSON, flows CSV, a Markdown report or your tags as a GraphSense TagPack.
+- Public Esplora APIs are rate-limited (~1 request/s on mempool.space): large traces take minutes. Set
+  `BTCINTEL_BACKENDS` to a self-hosted Esplora/mempool instance and `BTCINTEL_PROXY=socks5h://127.0.0.1:9050`
+  to route lookups through Tor.
+
 License: Apache-2.0.
