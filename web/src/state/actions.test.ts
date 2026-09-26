@@ -25,6 +25,7 @@ vi.mock("../api/client", async () => {
 import { ApiError, api } from "../api/client";
 import * as actions from "./actions";
 import { useWorkbench } from "./store";
+import { emptyGraph, toSaved } from "../graph/model";
 
 const TXID = "aa".repeat(32);
 const mocked = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -124,4 +125,19 @@ test("save creates then updates a case; load restores the graph", async () => {
   mocked.getCase.mockResolvedValue({ id: "k2", name: "Old", notes: "", graph: { weird: true }, created_at: 1, updated_at: 2, watch: [] });
   await actions.loadCase("k2");
   expect(useWorkbench.getState().message).toMatch(/could not be read/);
+});
+
+test("loading a case detaches a running trace so its events cannot leak into that case", async () => {
+  mocked.startTrace.mockResolvedValue({ job_id: "j9" });
+  await actions.startTrace({ txid: TXID }, { max_hops: 2 });
+  const oldJobEvent = handlers.onEvent!;
+  mocked.cancelJob.mockResolvedValue({ cancelled: true });
+  mocked.getCase.mockResolvedValue({ id: "k3", name: "Other", notes: "", graph: toSaved(emptyGraph()), created_at: 1, updated_at: 2, watch: [] });
+  await actions.loadCase("k3");
+  oldJobEvent({ seq: 0, type: "nodes", items: [{ id: "addr:leak", kind: "address", label: "leak", data: {} }] });
+  const s = useWorkbench.getState();
+  expect(s.graph.nodes["addr:leak"]).toBeUndefined();
+  expect(s.dirty).toBe(false);
+  expect(s.job).toBeNull();
+  expect(mocked.cancelJob).toHaveBeenCalledWith("j9");
 });

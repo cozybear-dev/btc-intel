@@ -11,6 +11,8 @@ export const EXPAND_LIMIT = 25;
 const RISK_ORDER: RiskLevel[] = ["none", "low", "medium", "high", "severe"];
 const st = () => useWorkbench.getState();
 let unsubscribe: (() => void) | null = null;
+// Identity of the job subscription allowed to change the graph; a detached one's late events are ignored.
+let activeJob: object | null = null;
 let categories: Promise<Category[]> | null = null;
 
 function describe(e: unknown): string {
@@ -94,10 +96,23 @@ export const followPeel = (txid: string) =>
     return chain;
   });
 
+/** Stop applying a job's events to the graph (and optionally cancel it server-side). */
+function detachJob(cancel: boolean) {
+  const job = st().job;
+  if (cancel && job?.status === "running") void api.cancelJob(job.id).catch(() => {});
+  unsubscribe?.();
+  unsubscribe = null;
+  activeJob = null;
+  st().setJob(null);
+}
+
 function listen(jobId: string, kind: "trace" | "cluster", onDone?: () => Promise<void>) {
   unsubscribe?.();
+  const token = {};
+  activeJob = token;
   st().setJob({ id: jobId, kind, status: "running", nodes: 0, stops: 0, error: null, reason: null, calls: null });
   unsubscribe = subscribeJob(jobId, (e) => {
+    if (activeJob !== token) return;
     if (e.type === "nodes" || e.type === "edges" || e.type === "stop") {
       st().updateGraph((g) => applyJobEvent(g, e));
       const g = st().graph;
@@ -172,6 +187,7 @@ export const saveCase = () =>
 export const loadCase = (id: string) =>
   guarded(async () => {
     const c = await api.getCase(id);
+    detachJob(true);
     const graph = fromSaved(c.graph);
     st().setCase({ id: c.id, name: c.name, notes: c.notes, graph: graph ?? emptyGraph() });
     st().markClean();
@@ -180,8 +196,7 @@ export const loadCase = (id: string) =>
   });
 
 export function newCase() {
-  unsubscribe?.();
-  unsubscribe = null;
+  detachJob(true);
   st().reset();
 }
 
