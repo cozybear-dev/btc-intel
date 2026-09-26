@@ -1,7 +1,30 @@
 import type { Page, Route } from "@playwright/test";
+import { ANALYSED, analysisSections } from "../src/test/fixtures";
 
 export const TXID = "aa".repeat(32);
 export const CHILD = "cc".repeat(32);
+
+export const ADDRESS = ANALYSED;
+const ANALYSIS_EVENTS = [
+  { type: "section", name: "profile", data: analysisSections.profile },
+  { type: "section", name: "verdict", data: { ...analysisSections.verdict, final: false } },
+  { type: "nodes", items: [
+    { id: `addr:${ANALYSED}`, kind: "address", label: "bc1qanal…ysed", data: {} },
+    { id: `tx:${TXID}`, kind: "tx", label: "aaaaaaaa", data: {} },
+    { id: "addr:bc1qransom", kind: "address", label: "LockBit", data: { risk: "severe" } },
+  ] },
+  { type: "edges", items: [
+    { id: `in:${TXID}:0`, source: "addr:bc1qransom", target: `tx:${TXID}`, value: 2_000_000, taint: 1_500_000 },
+    { id: `out:${TXID}:0`, source: `tx:${TXID}`, target: `addr:${ANALYSED}`, value: 1_500_000, taint: 1_500_000 },
+  ] },
+  { type: "stop", item: { node: "addr:bc1qransom", reason: "labeled", taint: 1_500_000, detail: "ransomware: LockBit", hops: 1 } },
+  { type: "section", name: "cluster", data: analysisSections.cluster },
+  { type: "section", name: "sources", data: analysisSections.sources },
+  { type: "section", name: "destinations", data: analysisSections.destinations },
+  { type: "section", name: "verdict", data: analysisSections.verdict },
+  { type: "done", incomplete: false, reason: null, calls_used: 42 },
+  { type: "status", status: "done", error: null },
+];
 
 function tx(txid: string, inputAddr: string, outputs: [string, number][]) {
   return {
@@ -28,7 +51,18 @@ export async function mockApi(page: Page) {
     const path = url.pathname.replace(/^\/api/, "");
     const method = route.request().method();
     if (path === "/health") return json(route, { status: "ok", version: "0.1.0" });
-    if (path === "/search") return json(route, { kind: "txid", query: url.searchParams.get("q")!.toLowerCase() });
+    if (path === "/search") {
+      const query = url.searchParams.get("q")!;
+      return json(route, /^[0-9a-f]{64}$/i.test(query) ? { kind: "txid", query: query.toLowerCase() } : { kind: "address", query });
+    }
+    if (path === "/analyze" && method === "POST") return json(route, { job_id: "an1" }, 202);
+    if (path === "/jobs/an1/events") {
+      const body = ANALYSIS_EVENTS.map((e, seq) => `data: ${JSON.stringify({ seq, ...e })}\n\n`).join("");
+      return route.fulfill({ status: 200, contentType: "text/event-stream", body });
+    }
+    if (path === "/jobs/an1") {
+      return json(route, { id: "an1", kind: "analysis", status: "done", error: null, events: ANALYSIS_EVENTS.length, result: { markdown: `# Address analysis: ${ANALYSED}\n` } });
+    }
     if (path === `/tx/${TXID}`) return json(route, tx(TXID, "bc1qsource", [["bc1qdest", 60_000], ["bc1qchange", 39_000]]));
     if (path === `/tx/${TXID}/outspends`) return json(route, [{ spent: true, txid: CHILD, vin: 0, status: null }, { spent: false, txid: null, vin: null, status: null }]);
     if (path === `/tx/${CHILD}`) return json(route, tx(CHILD, "bc1qdest", [["bc1qnext", 59_000]]));

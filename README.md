@@ -22,7 +22,12 @@ entities, screen addresses for risk, and study the techniques used to obfuscate 
 Development with hot reload: run `uv run btcintel serve` and, in another shell, `cd web && npm run dev`
 (http://127.0.0.1:5173, proxies /api to the backend).
 
-- Search a txid, `txid:vout`, address or tag name.
+- Enter an address to get an **automatic analysis**: a risk verdict with the reasons behind it, where the
+  funds came from and went to (exchanges, mixers, sanctioned or ransomware addresses, unspent), the
+  co-spend cluster and the wallet fingerprint. It fills in live in about 1–1.5 minutes on public APIs;
+  **Go deeper** reruns it with larger budgets (5–10 min) and **Open in graph** shows the traced paths.
+  The same report on the command line: `uv run btcintel analyze <address> [--deep] [--json]`.
+- Search a txid or `txid:vout` to open it in the graph, or a tag name to find labeled addresses.
 - Right-click nodes to expand inputs/outputs, trace, follow peel chains or expand clusters.
 - Save investigations as cases; export PNG, graph JSON, flows CSV, a Markdown report or your tags as a GraphSense TagPack.
 - Public Esplora APIs are rate-limited (~1 request/s on mempool.space): large traces take minutes. Set

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { TXID, mockApi } from "./fixtures";
+import { ADDRESS, TXID, mockApi } from "./fixtures";
 
 test("search, expand, inspect, save and reload a case", async ({ page }) => {
   await mockApi(page);
@@ -28,4 +28,19 @@ test("knowledge base view is reachable", async ({ page }) => {
   await mockApi(page);
   await page.goto("/#/kb");
   await expect(page.getByRole("link", { name: "TTP matrix" })).toBeVisible();
+});
+
+test("entering an address runs the automatic analysis and opens its graph", async ({ page }) => {
+  await mockApi(page);
+  await page.goto("/");
+  await page.getByRole("searchbox").fill(ADDRESS);
+  await page.getByRole("searchbox").press("Enter");
+  await expect(page).toHaveURL(new RegExp(`#/analysis/${ADDRESS}$`));
+  const verdict = page.getByRole("region", { name: "Verdict" });
+  await expect(verdict.getByText(/directly from LockBit/)).toBeVisible();
+  await expect(verdict.getByText("preliminary: tracing still running")).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Destinations of funds" }).getByRole("button", { name: "Example Exchange" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save as case" })).toBeEnabled();
+  await page.getByRole("button", { name: "Open in graph" }).click();
+  await expect(page.getByTestId("graph-stats")).toHaveText("1 txs · 2 addresses · 2 edges · 1 stops");
 });
