@@ -1,0 +1,16 @@
+# runtime data (caches, intel db) — never commit
+data/
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+# web
+node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+# downloaded ground-truth archives used by fixture recording
+backend/tests/fixtures/real/_downloads/
