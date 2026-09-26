@@ -17,6 +17,7 @@ from btcintel.analysis.models import (
     Exposure,
 )
 from btcintel.analysis.profile import build_profile
+from btcintel.analysis.report import to_markdown
 from btcintel.analysis.verdict import build_verdict
 from btcintel.chain.budget import CallBudget, budget_scope
 from btcintel.chain.errors import ChainError
@@ -142,6 +143,7 @@ async def analyze_address(address: str, policy: AnalysisPolicy, *, chain: ChainS
     report = AnalysisReport(address=address, depth=policy.depth, generated_at=time.time(), profile=profile,
                             cluster=cluster, sources=sources, destinations=destinations, verdict=verdict,
                             calls_used=calls)
+    report = report.model_copy(update={"markdown": to_markdown(report)})
     stopped = [e.reason for e in (sources, destinations) if e.incomplete and e.reason]
     send({"type": "done", "incomplete": bool(stopped), "reason": "; ".join(stopped) or None, "calls_used": calls})
     return report
