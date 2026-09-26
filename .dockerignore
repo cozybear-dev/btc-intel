@@ -1,0 +1,16 @@
+.git
+.superpowers
+.env
+data
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.hypothesis
+backend/tests
+docs/superpowers
+# host modules would overwrite the image's own `npm ci` output
+web/node_modules
+web/dist
+web/test-results
+web/playwright-report

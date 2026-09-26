@@ -1,0 +1,15 @@
+services:
+  btcintel:
+    build: .
+    image: btc-intel
+    ports:
+      - "127.0.0.1:8765:8765"  # loopback only: the API is unauthenticated
+    volumes:
+      - ./data:/app/data  # intel.db (tags, clusters, cases) and cache.db, shared with a native install
+    environment:
+      BTCINTEL_ALLOWED_HOSTS: "127.0.0.1,localhost"  # keep the DNS-rebinding Host check on the 0.0.0.0 bind
+      BTCINTEL_BACKENDS: ${BTCINTEL_BACKENDS:-}  # set in .env; empty = public mempool.space/blockstream
+      BTCINTEL_PROXY: ${BTCINTEL_PROXY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # reach a self-hosted Esplora/mempool running on the host
+    restart: unless-stopped

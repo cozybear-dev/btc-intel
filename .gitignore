@@ -14,3 +14,5 @@ web/test-results/
 web/playwright-report/
 # downloaded ground-truth archives used by fixture recording
 backend/tests/fixtures/real/_downloads/
+# docker compose settings (BTCINTEL_BACKENDS, BTCINTEL_PROXY)
+.env
