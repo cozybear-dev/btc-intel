@@ -397,7 +397,8 @@
 - id: H-TAINT
   name: Taint analysis models
   family: taint
-  status: planned
+  status: implemented
+  implemented_by: btcintel.trace.taint.forward
   confidence: medium
   summary: >-
     How much of each output derives from a tainted input: poison (any tainted input taints every

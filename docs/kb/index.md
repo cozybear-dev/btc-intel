@@ -37,7 +37,7 @@ Analysis techniques (`H-*`), obfuscation / laundering / theft techniques (`O-*`)
 | [H-PEEL](heuristics/h-peel.md) | Peel chain | pattern | implemented | medium |
 | [H-PUBKEY](heuristics/h-pubkey.md) | Public-key reuse across scripts | clustering | planned | medium |
 | [H-REUSE](heuristics/h-reuse.md) | Address reuse | clustering | kb_only | high |
-| [H-TAINT](heuristics/h-taint.md) | Taint analysis models | taint | planned | medium |
+| [H-TAINT](heuristics/h-taint.md) | Taint analysis models | taint | implemented | medium |
 | [H-TEMPORAL](heuristics/h-temporal.md) | Temporal profiling | temporal | planned | low |
 | [H-XCHAIN](heuristics/h-xchain.md) | Cross-chain exit markers | crosschain | implemented | high |
 

@@ -1,6 +1,6 @@
 # H-TAINT — Taint analysis models
 
-> **Family:** taint · **Status in btc-intel:** planned · **Confidence:** medium
+> **Family:** taint · **Status in btc-intel:** implemented · **Confidence:** medium
 
 ## Summary
 
@@ -39,7 +39,17 @@ Mixing with clean coins dilutes haircut taint; ordering tricks affect FIFO.
 
 Poison, haircut and FIFO are implemented forward (where funds went) and backward (where funds came from). Haircut and FIFO never create or lose taint beyond the transaction's value (property-tested).
 
-Planned — Plan 2 implements this in `backend/btcintel/trace/taint.py`.
+Worked example (inputs 60,000 + 40,000 sats, where input 1 is tainted; outputs 70,000 + 29,000 sats; fee 1,000):
+
+| Model | Output 0 | Output 1 |
+|---|---|---|
+| haircut | 28,000 | 11,600 |
+| FIFO | 10,000 | 29,000 |
+| poison | 70,000 | 29,000 |
+
+Taint amounts are clamped to `[0, value]`. FIFO treats the tainted sats as the first sats of each input (forward) or output (backward) and maps positions in the input value stream onto the output stream, with the fee at the end of the output stream. Poison taints every positive-value output fully.
+
+Implemented in `backend/btcintel/trace/taint.py` (`forward`).
 
 ## Case examples
 
