@@ -53,7 +53,7 @@ The workbench is too hands-on. Searching an address today (`web/src/state/action
 | quick | 100 txs | 3 hops, 60 txs, 120 calls | 200 addresses, 60 calls | about 300 calls | about 1–1.5 min |
 | deep | 500 txs | 6 hops, 300 txs, 600 calls | 2000 addresses, 400 calls | about 1,600+ calls | about 5–10 min |
 
-Both traces use `min_value_sats=10_000` and set `max_address_txs` to the history size.
+Both traces use `min_value_sats=10_000` and set `max_address_txs` to the history size. Their `max_txs` is the trace's tx budget plus the history size, because seeding puts the address's own history txs into the trace graph; the call budget still bounds the work.
 
 **Job events** (on top of the existing trace events and the final `status`):
 - `{"type":"section","name":"profile|cluster|sources|destinations|verdict","data":{…}}`. The verdict is sent twice: preliminary, then final.
@@ -62,7 +62,7 @@ Both traces use `min_value_sats=10_000` and set `max_address_txs` to the history
 
 **Engine and label changes** (small, and backward compatible for default traces):
 - `labels/lookup.py`: the stop match also considers `t.abuse`. `stop_category` returns the abuse id when that is what matched. Default stop sets contain no abuse ids, so existing trace behavior is unchanged.
-- `trace/engine.py`: never label-stop at the seed address itself, in either direction. `Stop` records `hops`, the hop count at which the stop happened.
+- `trace/engine.py`: never label-stop at the seed address itself, in either direction. Backward traces check labels before `min_value` and `max_hops`, as forward traces do, so a small payment from a labeled payer is still a labeled stop. `Stop` records `hops`, the hop count at which the stop happened.
 - `trace/graph.py`: add `Stop.hops: int | None = None`.
 
 ## Exposure (`analysis/exposure.py`)
@@ -93,7 +93,7 @@ Levels come from `catalog.schema.RISK_ORDER`: none < low < medium < high < sever
 | 5 | Only low or none labeled entities reached | low |
 | 6 | Nothing labeled reached | none |
 
-A **coverage line** is always shown: the share of value traced to an endpoint versus the share not reached. When more than 50% was not reached, the verdict is marked "low confidence — try Go deeper".
+A **coverage line** is always shown: the share of value traced to an endpoint versus the share not reached, each direction weighted by its traced total (or by what its trace reached, when that is more). When more than 50% was not reached overall or in either direction, or a direction could not be traced at all (which adds a reason saying so), the verdict is marked "low confidence — try Go deeper", and the "nothing found" reason says how much was traced.
 
 ## Backend files
 
