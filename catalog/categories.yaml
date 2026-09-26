@@ -1,1 +1,226 @@
-[]
+# Entity (what an address belongs to) and abuse (why it is illicit) taxonomy.
+# risk drives risk scoring; stop_trace = tracing stops by default when funds reach it (a cash-out
+# or service boundary); gs_concepts maps GraphSense/INTERPOL DW-VA concept ids onto ours.
+- id: exchange
+  kind: entity
+  name: Exchange (regulated / KYC)
+  risk: low
+  gs_concepts: [exchange]
+  stop_trace: true
+  description: Custodial virtual-asset exchange that performs customer due diligence.
+- id: high_risk_exchange
+  kind: entity
+  name: High-risk exchange
+  risk: high
+  stop_trace: true
+  description: Exchange with no or weak KYC/AML, or a history of servicing criminals (e.g. BTC-e, Garantex, Bitzlato).
+- id: instant_exchange
+  kind: entity
+  name: Instant exchanger / swap service
+  risk: medium
+  stop_trace: true
+  description: Non-custodial-looking swap services converting between assets without accounts (e.g. FixedFloat, SideShift, ChangeNOW; eXch closed 2025).
+- id: p2p_exchange
+  kind: entity
+  name: P2P exchange
+  risk: medium
+  stop_trace: true
+  description: Peer-to-peer trading venues and escrow (e.g. Bisq, HodlHodl, RoboSats; LocalBitcoins closed 2023).
+- id: otc_broker
+  kind: entity
+  name: OTC broker
+  risk: medium
+  stop_trace: true
+  description: Over-the-counter desk or broker trading large amounts off-exchange.
+- id: wallet_service
+  kind: entity
+  name: Hosted wallet service
+  risk: low
+  gs_concepts: [wallet_service, escrow_wallet]
+  stop_trace: true
+  description: Custodial wallet or escrow provider.
+- id: payment_processor
+  kind: entity
+  name: Payment processor
+  risk: low
+  gs_concepts: [payment_processor]
+  stop_trace: true
+  description: Merchant payment processing service.
+- id: merchant
+  kind: entity
+  name: Merchant / shop
+  risk: none
+  gs_concepts: [shop, collectible, item]
+  description: Seller of goods or services, including NFT/collectible sellers.
+- id: mining_pool
+  kind: entity
+  name: Mining pool / miner
+  risk: none
+  gs_concepts: [miner, mining_service]
+  description: Block producer or pool; source of newly minted coins.
+- id: mixing_service
+  kind: entity
+  name: Custodial mixer
+  risk: high
+  gs_concepts: [mixing_service]
+  stop_trace: true
+  description: Custodial tumbler that pools deposits and pays out unrelated coins (e.g. Bitcoin Fog, ChipMixer, Blender.io, Sinbad, Cryptomixer).
+- id: coinjoin
+  kind: entity
+  name: CoinJoin
+  risk: medium
+  gs_concepts: [coinjoin]
+  stop_trace: true
+  description: Collaborative CoinJoin transaction or coordinator (Wasabi/WabiSabi, Whirlpool, JoinMarket).
+- id: bridge
+  kind: entity
+  name: Cross-chain bridge / swap protocol
+  risk: medium
+  stop_trace: true
+  description: Bridge or cross-chain swap protocol vault (THORChain, Chainflip, Avalanche Bridge, WBTC, tBTC).
+- id: defi
+  kind: entity
+  name: DeFi protocol
+  risk: low
+  gs_concepts: [defi, defi_lending, defi_dex, defi_derivative]
+  stop_trace: true
+  description: Decentralised-finance protocol contract or vault.
+- id: gambling
+  kind: entity
+  name: Gambling service
+  risk: medium
+  gs_concepts: [gambling]
+  stop_trace: true
+  description: Online casino or betting service.
+- id: marketplace
+  kind: entity
+  name: Online marketplace
+  risk: medium
+  gs_concepts: [market]
+  stop_trace: true
+  description: Online marketplace not known to be a darknet market.
+- id: darknet_market
+  kind: entity
+  name: Darknet market
+  risk: severe
+  stop_trace: true
+  description: Darknet marketplace for illicit goods (e.g. AlphaBay, Hydra).
+- id: atm
+  kind: entity
+  name: Bitcoin ATM
+  risk: low
+  gs_concepts: [atm]
+  stop_trace: true
+  description: Bitcoin ATM operator.
+- id: faucet
+  kind: entity
+  name: Faucet
+  risk: none
+  gs_concepts: [faucet]
+  description: Service giving away small amounts of coins.
+- id: hosting
+  kind: entity
+  name: Hosting / VPN provider
+  risk: low
+  gs_concepts: [hosting, vpn]
+  description: Web hosting, VPN or similar infrastructure provider accepting bitcoin.
+- id: ico
+  kind: entity
+  name: ICO / token sale wallet
+  risk: low
+  gs_concepts: [ico_wallet]
+  description: Fundraising wallet of a token sale.
+- id: cold_wallet
+  kind: entity
+  name: Cold wallet
+  risk: none
+  gs_concepts: [cold_wallet]
+  description: Offline storage wallet (usually of a service).
+- id: donation
+  kind: entity
+  name: Donation address
+  risk: none
+  gs_concepts: [donation]
+  description: Publicly posted donation address.
+- id: organization
+  kind: entity
+  name: Organization
+  risk: none
+  gs_concepts: [organization]
+  description: Named organization not covered by a more specific category.
+- id: individual
+  kind: entity
+  name: Individual
+  risk: none
+  gs_concepts: [user]
+  description: Named natural person.
+- id: perpetrator
+  kind: entity
+  name: Perpetrator
+  risk: high
+  gs_concepts: [perpetrator]
+  description: Address controlled by the perpetrator of an offence.
+- id: victim
+  kind: entity
+  name: Victim
+  risk: none
+  gs_concepts: [victim]
+  description: Address of a victim of an offence.
+- id: service
+  kind: entity
+  name: Other online service
+  risk: none
+  gs_concepts: [service, filesharing, index, messaging_service, search_engine]
+  description: Online service without a more specific category.
+- id: unknown
+  kind: entity
+  name: Unknown
+  risk: none
+  description: Fallback when a tag's category cannot be mapped.
+- id: sanctioned
+  kind: abuse
+  name: Sanctioned
+  risk: severe
+  gs_concepts: [sanction]
+  description: Listed on a sanctions list (e.g. OFAC SDN).
+- id: ransomware
+  kind: abuse
+  name: Ransomware
+  risk: severe
+  gs_concepts: [ransomware]
+  description: Ransom payment or ransomware operator/affiliate address.
+- id: theft
+  kind: abuse
+  name: Theft / hack proceeds
+  risk: severe
+  gs_concepts: [service_hack]
+  description: Proceeds of a hack or theft.
+- id: scam
+  kind: abuse
+  name: Scam / fraud
+  risk: high
+  gs_concepts: [scam, phishing, investment_fraud, ponzi_scheme, pyramid_scheme]
+  description: Fraud including phishing, investment fraud, pig-butchering, Ponzi and pyramid schemes.
+- id: extortion
+  kind: abuse
+  name: Extortion
+  risk: high
+  gs_concepts: [extortion, sextortion]
+  description: Extortion and sextortion payments.
+- id: terrorism
+  kind: abuse
+  name: Terrorism / violent extremism financing
+  risk: severe
+  gs_concepts: [terrorism, extremism]
+  description: Financing of terrorism or violent extremism.
+- id: dark_web
+  kind: abuse
+  name: Dark-web activity
+  risk: severe
+  gs_concepts: [dark_web]
+  description: Illicit dark-web activity not attributed to a specific market.
+- id: csam
+  kind: abuse
+  name: Child sexual abuse material
+  risk: severe
+  description: Payments for child sexual abuse material.
