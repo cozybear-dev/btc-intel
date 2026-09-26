@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f6f6f4;
+  --panel: #ffffff;
+  --panel-2: #f0f0ee;
+  --text: #1b1b1f;
+  --muted: #5f6368;
+  --border: #dedede;
+  --accent: #2f6fed;
+  --danger: #c62828;
+  --risk-none: #8a8f98;
+  --risk-low: #2e9d5b;
+  --risk-medium: #c98f00;
+  --risk-high: #e0662e;
+  --risk-severe: #d13a3a;
+  --tx: #6b5bd6;
+  --script: #9aa0a6;
+  --taint: #e0662e;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111317;
+    --panel: #181b21;
+    --panel-2: #20242b;
+    --text: #e8eaed;
+    --muted: #9aa0a6;
+    --border: #2d3139;
+    --accent: #6ea0ff;
+    --danger: #ff6b6b;
+    --risk-none: #8a8f98;
+    --risk-low: #4cc07e;
+    --risk-medium: #e6b422;
+    --risk-high: #ff8a4c;
+    --risk-severe: #ff5c5c;
+    --tx: #9a8cff;
+    --script: #7d838c;
+    --taint: #ff8a4c;
+    color-scheme: dark;
+  }
+}
+
+html, body, #root { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, sans-serif; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; }
+.muted { color: var(--muted); }
+.btn { border: 1px solid var(--border); background: var(--panel-2); color: var(--text); border-radius: 6px; padding: 4px 10px; font-size: 13px; }
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.input { border: 1px solid var(--border); background: var(--panel); color: var(--text); border-radius: 6px; padding: 4px 8px; font-size: 13px; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.kb-article h1 { font-size: 1.5rem; font-weight: 700; margin: 0.5rem 0; }
+.kb-article h2 { font-size: 1.15rem; font-weight: 600; margin: 1rem 0 0.25rem; }
+.kb-article p, .kb-article li { line-height: 1.55; margin: 0.35rem 0; }
+.kb-article ul { list-style: disc; padding-left: 1.25rem; }
+.kb-article a { color: var(--accent); text-decoration: underline; }
+.kb-article table { border-collapse: collapse; margin: 0.5rem 0; font-size: 0.9em; }
+.kb-article th, .kb-article td { border: 1px solid var(--border); padding: 2px 6px; }
+.kb-article code { font-family: ui-monospace, monospace; background: var(--panel-2); padding: 0 3px; border-radius: 3px; }
