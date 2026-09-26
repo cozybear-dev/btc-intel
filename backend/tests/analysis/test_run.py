@@ -1,6 +1,9 @@
 import pytest
 
-from tests.analysis_scenario import R, build_funded, run_analysis
+from btcintel.analysis.models import AnalysisPolicy
+from btcintel.labels.store import Tag
+from tests.analysis_scenario import A, R, build_funded, run_analysis
+from tests.builders import ADDR, mk_tx
 from tests.fakes import FakeChain
 
 
@@ -51,3 +54,18 @@ async def test_a_failing_trace_direction_is_reported_not_fatal():
     assert report.sources.error.startswith("NotFound") and report.sources.buckets[0].kind == "remainder"
     assert "Example Exchange" in {b.label for b in report.destinations.buckets}
     assert events[-1]["type"] == "done" and events[-1]["incomplete"]
+
+
+async def test_busy_address_is_still_traced_past_its_own_history():
+    # 65 receipts (> quick trace_txs = 60), then everything is swept to a darknet market
+    cb = mk_tx([(None, 0)], [(ADDR[10], 30_000)] * 65, coinbase=True)
+    receipts = [mk_tx([(cb, i)], [(A, 20_000)]) for i in range(65)]
+    sweep = mk_tx([(r, 0) for r in receipts], [(ADDR[11], 1_290_000)])
+    hydra = Tag(address=ADDR[11], label="Hydra", category="darknet_market", confidence="authority_data",
+                source="t", pack="t")
+    # FakeChain has no tx cache, so give the traces enough calls to isolate the tx cap
+    policy = AnalysisPolicy.quick().model_copy(update={"trace_calls": 1000})
+    report, _ = await run_analysis(FakeChain([cb, *receipts, sweep]), extra_tags=[hydra], policy=policy)
+    dst = {b.label: b for b in report.destinations.buckets}
+    assert dst["Hydra"].min_hops == 1 and dst["Hydra"].share > 0.99
+    assert report.verdict.level == "severe"

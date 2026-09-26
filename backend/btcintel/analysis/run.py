@@ -102,7 +102,10 @@ async def analyze_address(address: str, policy: AnalysisPolicy, *, chain: ChainS
 
     async def run_trace(direction: Direction) -> TraceResult | str:
         nonlocal calls
-        tp = TracePolicy(direction=direction, max_hops=policy.trace_hops, max_txs=policy.trace_txs,
+        # Seeding puts every history tx paying the address into the trace graph, so the tx cap
+        # allows for that history on top of trace_txs; the call budget still bounds the work.
+        tp = TracePolicy(direction=direction, max_hops=policy.trace_hops,
+                         max_txs=policy.trace_txs + policy.history_txs,
                          max_calls=policy.trace_calls, min_value_sats=policy.min_value_sats,
                          taint_model="haircut", stop_categories=stop_categories,
                          max_address_txs=policy.history_txs)

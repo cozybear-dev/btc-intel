@@ -1,5 +1,6 @@
 """Ransomware payer -> analysed address -> exchange / unspent: the graph the analysis tests run on."""
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from btcintel.analysis.models import AnalysisPolicy
@@ -43,15 +44,15 @@ def ransomware_tag() -> Tag:
                source="test", pack="ransomwhere")
 
 
-def stores(tagged: bool = True) -> tuple[TagStore, UnionFind]:
+def stores(tagged: bool = True, *, extra_tags: Iterable[Tag] = ()) -> tuple[TagStore, UnionFind]:
     conn = open_intel_db(":memory:")
     tags = TagStore(conn)
-    tags.add_many([*scenario_tags(), *([ransomware_tag()] if tagged else [])])
+    tags.add_many([*scenario_tags(), *([ransomware_tag()] if tagged else []), *extra_tags])
     return tags, UnionFind(conn)
 
 
-async def run_analysis(chain, *, address=A, tagged=True, policy=None):
-    tags, uf = stores(tagged)
+async def run_analysis(chain, *, address=A, tagged=True, policy=None, extra_tags: Iterable[Tag] = ()):
+    tags, uf = stores(tagged, extra_tags=extra_tags)
     events: list[dict] = []
     report = await analyze_address(address, policy or AnalysisPolicy.quick(), chain=chain, tags=tags, uf=uf,
                                    taxonomy=TAX, emit=events.append)
