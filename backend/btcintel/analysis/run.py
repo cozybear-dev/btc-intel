@@ -6,6 +6,7 @@ import asyncio
 import time
 from collections import Counter
 from contextlib import aclosing
+from dataclasses import replace
 from typing import Any
 
 from btcintel.analysis.exposure import compute_exposure, failed_exposure
@@ -44,6 +45,30 @@ def analysis_stop_categories(taxonomy: Taxonomy) -> list[str]:
     """Analysis traces stop at every labeled entity, abuse labels included, so each traced satoshi
     ends at exactly one endpoint and the exposure shares add up."""
     return sorted(set(taxonomy.categories) - {"unknown"})
+
+
+class _AnalysisLabels(LabelLookup):
+    """Label lookup for the analysis traces: the seed's untagged cluster siblings do not stop them.
+
+    Every cluster sibling inherits the seed's tags, so with the analysis stop set a labeled seed's
+    change and consolidation addresses would stop its trace at hop 1 as "own cluster" and the real
+    counterparties would never be reached. An address in the seed's current cluster with no tags of
+    its own is therefore traced through; one with its own tags still stops (as "own cluster").
+    """
+
+    def __init__(self, tags: TagStore, taxonomy: Taxonomy, uf: UnionFind, stop_categories: list[str],
+                 seed: str) -> None:
+        super().__init__(tags, taxonomy, uf, stop_categories)
+        self.cluster_uf = uf
+        self.seed = seed
+
+    def lookup(self, address: str) -> AddressInfo:
+        info = super().lookup(address)
+        own_tags = any(t.address == info.address for t in info.tags)
+        if (info.stop_category and not own_tags and info.cluster is not None
+                and info.cluster == self.cluster_uf.root_of(self.seed)):
+            return replace(info, stop_category=None)
+        return info
 
 
 def label_views(info: AddressInfo, taxonomy: Taxonomy) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -96,7 +121,7 @@ async def analyze_address(address: str, policy: AnalysisPolicy, *, chain: ChainS
 
     # 2. Cluster, sources and destinations run concurrently, each inside its own call budget.
     stop_categories = analysis_stop_categories(taxonomy)
-    trace_labels = LabelLookup(tags, taxonomy, uf, stop_categories)
+    trace_labels = _AnalysisLabels(tags, taxonomy, uf, stop_categories, address)
 
     def graph_event(event: dict[str, Any]) -> None:
         if event["type"] != "done":  # the analysis sends one "done" of its own at the end

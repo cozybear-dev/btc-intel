@@ -41,6 +41,7 @@ The workbench is too hands-on. Searching an address today (`web/src/state/action
 2. **Cluster, backward trace and forward trace run concurrently** (`asyncio.gather`). Each keeps its own `CallBudget` scope; budgets live in ContextVars, so this is safe across tasks.
    - `expand_cluster(...)` produces the `cluster` section: size, partial, capped ("large service?"), conflicts and top `cluster_tags`.
    - The traces use `taint_model="haircut"`, and `stop_categories` is set to all taxonomy ids except `unknown`, which now match `abuse` as well as `category`.
+   - An address in the seed's current cluster with no tags of its own (it only inherits the cluster's tags, e.g. the seed's change) does not stop the analysis traces, so a labeled seed is still traced to its real counterparties.
    - Trace `nodes`/`edges`/`stop` events are forwarded into the job, so the web graph is already built.
 3. **Exposure** runs per direction over each `TraceResult`. Its output feeds the `sources` and `destinations` sections.
 4. **Final verdict and report.** The job result is `AnalysisReport.model_dump()`, including a `markdown` rendering.
@@ -73,7 +74,7 @@ Stops are grouped into buckets. Each bucket records amount (sats), share of the 
 - **Newly mined:** coinbase, backward only.
 - **Beyond limits:** max_hops, min_value or max_txs.
 - **Not reached (budget):** the total minus all stops.
-- **Own cluster:** a labeled stop whose address is in the seed's cluster (checked via `uf.find`). It is reported separately, not as exposure.
+- **Own cluster:** a labeled stop whose address is in the seed's cluster (checked via `uf.find`); only addresses with tags of their own stop there. It is reported separately, not as exposure.
 
 The traced total is the sum of the seed's received outputs within the fetched history. Buckets always add up to 100%.
 

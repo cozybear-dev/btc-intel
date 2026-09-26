@@ -7,6 +7,7 @@ from btcintel.labels.store import Tag
 from tests.analysis_scenario import TAX, A, R, build_funded, run_analysis, stores
 from tests.builders import ADDR, mk_tx
 from tests.fakes import FakeChain
+from tests.scenario import EX
 
 
 async def test_analysis_finds_ransomware_source_and_exchange_destination():
@@ -97,3 +98,16 @@ def test_cluster_top_labels_put_the_riskiest_first():
                           conflicts=[])
     top = summarize_cluster(result, uf, tags, TAX).top_labels
     assert [(t["label"], t["count"]) for t in top] == [("Helix", 1), ("Big Exchange", 3)]
+
+
+async def test_a_labeled_address_is_traced_through_its_own_change():
+    c, x = ADDR[12], ADDR[13]
+    cb = mk_tx([(None, 0)], [(R, 1_000_000), (c, 10_000)], coinbase=True)
+    link = mk_tx([(cb, 0), (cb, 1)], [(R, 1_005_000)])        # R and C co-spend: CIOH links them
+    pay = mk_tx([(link, 0)], [(x, 500_000), (c, 504_000)])     # R pays X, change to its sibling C
+    cash = mk_tx([(pay, 1)], [(EX, 503_000)])                  # C cashes out at the exchange
+    report, _ = await run_analysis(FakeChain([cb, link, pay, cash]), address=R)
+    assert report.cluster.size == 2
+    kinds = {(b.kind, b.label) for b in report.destinations.buckets}
+    assert ("labeled", "Example Exchange") in kinds
+    assert not any(k == "own_cluster" for k, _ in kinds)
