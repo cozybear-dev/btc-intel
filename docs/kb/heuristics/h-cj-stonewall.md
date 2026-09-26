@@ -1,6 +1,6 @@
 # H-CJ-STONEWALL — Stonewall / Stonewall-X2
 
-> **Family:** coinjoin · **Status in btc-intel:** planned · **Confidence:** low · **Parent:** [H-CJ](h-cj.md)
+> **Family:** coinjoin · **Status in btc-intel:** implemented · **Confidence:** low · **Parent:** [H-CJ](h-cj.md)
 
 ## Summary
 
@@ -28,7 +28,7 @@ By design this makes a single-party transaction look multi-party.
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/coinjoin.py`.
+Implemented in `backend/btcintel/heuristics/coinjoin.py` (`classify_coinjoin`).
 
 ## Case examples
 

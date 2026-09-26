@@ -1,7 +1,8 @@
 - id: H-CIOH
   name: Common-input-ownership
   family: clustering
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.cioh.cioh_heuristic
   confidence: high
   summary: >-
     All inputs spent by one transaction are controlled by one entity, because each input needs its
@@ -157,7 +158,8 @@
 - id: H-CJ
   name: CoinJoin detection
   family: coinjoin
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.coinjoin.coinjoin_heuristic
   confidence: high
   summary: >-
     CoinJoins combine inputs of many users and create equal-value outputs so outputs cannot be
@@ -170,7 +172,8 @@
   parent: H-CJ
   name: WabiSabi (Wasabi 2.x and forks)
   family: coinjoin
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.coinjoin.classify_coinjoin
   confidence: high
   summary: >-
     Coordinator CoinJoins by Wasabi 2.x, Ginger and community coordinators (e.g. kruw.io): ≥10
@@ -184,7 +187,8 @@
   parent: H-CJ
   name: ZeroLink (Wasabi 1.x)
   family: coinjoin
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.coinjoin.classify_coinjoin
   confidence: high
   summary: >-
     Wasabi 1.x CoinJoins (2018–2024): one large equal-value group near 0.1 BTC (anonymity set
@@ -197,7 +201,8 @@
   parent: H-CJ
   name: Whirlpool mix (Samourai / Ashigaru)
   family: coinjoin
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.coinjoin.classify_coinjoin
   confidence: high
   summary: >-
     Whirlpool mixes (Samourai 2019–2024, Ashigaru 2025–): equal number of inputs and outputs (5–10),
@@ -211,7 +216,8 @@
   parent: H-CJ
   name: Whirlpool Tx0 (premix)
   family: coinjoin
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.coinjoin.classify_coinjoin
   confidence: high
   summary: >-
     Single-owner transaction preparing coins for Whirlpool: an OP_RETURN, a coordinator fee output,
@@ -225,7 +231,8 @@
   parent: H-CJ
   name: JoinMarket
   family: coinjoin
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.coinjoin.classify_coinjoin
   confidence: medium
   summary: >-
     Peer-to-peer maker/taker CoinJoins: n ≥ 3 equal outputs plus up to one change output per
@@ -239,7 +246,8 @@
   parent: H-CJ
   name: Stonewall / Stonewall-X2
   family: coinjoin
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.coinjoin.classify_coinjoin
   confidence: low
   summary: >-
     Samourai/Ashigaru transaction with 4 outputs of which exactly one pair is equal; may be single-
@@ -252,7 +260,8 @@
   parent: H-CJ
   name: Generic equal-output multi-input transaction
   family: coinjoin
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.coinjoin.classify_coinjoin
   confidence: low
   summary: ≥2 inputs and ≥2 equal-value outputs; weak indicator of a manual or unknown CoinJoin.
   signals: ["largest equal group ≥ 2", "n_in ≥ 2"]

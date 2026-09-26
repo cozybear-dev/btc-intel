@@ -1,6 +1,6 @@
 # H-CJ-GENERIC — Generic equal-output multi-input transaction
 
-> **Family:** coinjoin · **Status in btc-intel:** planned · **Confidence:** low · **Parent:** [H-CJ](h-cj.md)
+> **Family:** coinjoin · **Status in btc-intel:** implemented · **Confidence:** low · **Parent:** [H-CJ](h-cj.md)
 
 ## Summary
 
@@ -24,7 +24,7 @@ This is the fallback when no specific implementation matches. It exists so that 
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/coinjoin.py`.
+Implemented in `backend/btcintel/heuristics/coinjoin.py` (`classify_coinjoin`).
 
 ## Case examples
 

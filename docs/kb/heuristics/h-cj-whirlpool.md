@@ -1,6 +1,6 @@
 # H-CJ-WHIRLPOOL — Whirlpool mix (Samourai / Ashigaru)
 
-> **Family:** coinjoin · **Status in btc-intel:** planned · **Confidence:** high · **Parent:** [H-CJ](h-cj.md)
+> **Family:** coinjoin · **Status in btc-intel:** implemented · **Confidence:** high · **Parent:** [H-CJ](h-cj.md)
 
 ## Summary
 
@@ -28,7 +28,7 @@ Remixing increases ambiguity; privacy is lost by post-mix consolidation ([H-CJ-P
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/coinjoin.py`.
+Implemented in `backend/btcintel/heuristics/coinjoin.py` (`classify_coinjoin`).
 
 ## Case examples
 

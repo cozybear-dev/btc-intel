@@ -1,6 +1,6 @@
 # H-CJ-JOINMARKET — JoinMarket
 
-> **Family:** coinjoin · **Status in btc-intel:** planned · **Confidence:** medium · **Parent:** [H-CJ](h-cj.md)
+> **Family:** coinjoin · **Status in btc-intel:** implemented · **Confidence:** medium · **Parent:** [H-CJ](h-cj.md)
 
 ## Summary
 
@@ -27,7 +27,7 @@ Makers' fidelity bonds and randomised amounts limit analysis; post-mix behaviour
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/coinjoin.py`.
+Implemented in `backend/btcintel/heuristics/coinjoin.py` (`classify_coinjoin`).
 
 ## Case examples
 

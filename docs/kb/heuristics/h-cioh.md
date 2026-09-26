@@ -1,6 +1,6 @@
 # H-CIOH — Common-input-ownership
 
-> **Family:** clustering · **Status in btc-intel:** planned · **Confidence:** high
+> **Family:** clustering · **Status in btc-intel:** implemented · **Confidence:** high
 
 ## Summary
 
@@ -40,7 +40,7 @@ CoinJoin ([O-COINJOIN](../techniques/o-coinjoin.md)), PayJoin and Stonewall-styl
 
 btc-intel emits a `common_input` finding (confidence 0.95) listing the input addresses, or a `cioh_suppressed` finding when [H-CJ](h-cj.md) classifies the transaction as a multi-party CoinJoin or Stonewall. Whirlpool Tx0 transactions keep CIOH because a Tx0 is built by a single wallet. Cluster expansion (`backend/btcintel/cluster/expand.py`) applies the same rule.
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/cioh.py`.
+Implemented in `backend/btcintel/heuristics/cioh.py` (`cioh_heuristic`).
 
 ## Case examples
 

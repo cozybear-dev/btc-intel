@@ -1,6 +1,6 @@
 # H-CJ-WASABI1 — ZeroLink (Wasabi 1.x)
 
-> **Family:** coinjoin · **Status in btc-intel:** planned · **Confidence:** high · **Parent:** [H-CJ](h-cj.md)
+> **Family:** coinjoin · **Status in btc-intel:** implemented · **Confidence:** high · **Parent:** [H-CJ](h-cj.md)
 
 ## Summary
 
@@ -29,7 +29,7 @@ Post-mix behaviour determines privacy ([H-CJ-POST](h-cj-post.md)).
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/coinjoin.py`.
+Implemented in `backend/btcintel/heuristics/coinjoin.py` (`classify_coinjoin`).
 
 ## Case examples
 

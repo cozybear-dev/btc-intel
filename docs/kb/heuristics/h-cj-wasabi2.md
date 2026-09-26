@@ -1,6 +1,6 @@
 # H-CJ-WASABI2 — WabiSabi (Wasabi 2.x and forks)
 
-> **Family:** coinjoin · **Status in btc-intel:** planned · **Confidence:** high · **Parent:** [H-CJ](h-cj.md)
+> **Family:** coinjoin · **Status in btc-intel:** implemented · **Confidence:** high · **Parent:** [H-CJ](h-cj.md)
 
 ## Summary
 
@@ -32,7 +32,7 @@ None at the transaction level: the structure is the point of a CoinJoin. Evasion
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/coinjoin.py`.
+Implemented in `backend/btcintel/heuristics/coinjoin.py` (`classify_coinjoin`).
 
 ## Case examples
 

@@ -1,6 +1,6 @@
 # H-CJ-WHIRLPOOL-TX0 — Whirlpool Tx0 (premix)
 
-> **Family:** coinjoin · **Status in btc-intel:** planned · **Confidence:** high · **Parent:** [H-CJ](h-cj.md)
+> **Family:** coinjoin · **Status in btc-intel:** implemented · **Confidence:** high · **Parent:** [H-CJ](h-cj.md)
 
 ## Summary
 
@@ -32,7 +32,7 @@ Spending toxic change together with mixed outputs re-links them ([H-CJ-POST](h-c
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/coinjoin.py`.
+Implemented in `backend/btcintel/heuristics/coinjoin.py` (`classify_coinjoin`).
 
 ## Case examples
 

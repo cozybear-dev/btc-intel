@@ -16,16 +16,16 @@ Analysis techniques (`H-*`), obfuscation / laundering / theft techniques (`O-*`)
 | [H-CHG-SCRIPT](heuristics/h-chg-script.md) | ↳ Script-type match | change | planned | medium |
 | [H-CHG-SELF](heuristics/h-chg-self.md) | ↳ Change returned to an input address | change | planned | high |
 | [H-CHG-UNNECESSARY](heuristics/h-chg-unnecessary.md) | ↳ Unnecessary input | change | planned | medium |
-| [H-CIOH](heuristics/h-cioh.md) | Common-input-ownership | clustering | planned | high |
-| [H-CJ](heuristics/h-cj.md) | CoinJoin detection | coinjoin | planned | high |
-| [H-CJ-GENERIC](heuristics/h-cj-generic.md) | ↳ Generic equal-output multi-input transaction | coinjoin | planned | low |
-| [H-CJ-JOINMARKET](heuristics/h-cj-joinmarket.md) | ↳ JoinMarket | coinjoin | planned | medium |
+| [H-CIOH](heuristics/h-cioh.md) | Common-input-ownership | clustering | implemented | high |
+| [H-CJ](heuristics/h-cj.md) | CoinJoin detection | coinjoin | implemented | high |
+| [H-CJ-GENERIC](heuristics/h-cj-generic.md) | ↳ Generic equal-output multi-input transaction | coinjoin | implemented | low |
+| [H-CJ-JOINMARKET](heuristics/h-cj-joinmarket.md) | ↳ JoinMarket | coinjoin | implemented | medium |
 | [H-CJ-POST](heuristics/h-cj-post.md) | Post-mix demixing | coinjoin | planned | medium |
-| [H-CJ-STONEWALL](heuristics/h-cj-stonewall.md) | ↳ Stonewall / Stonewall-X2 | coinjoin | planned | low |
-| [H-CJ-WASABI1](heuristics/h-cj-wasabi1.md) | ↳ ZeroLink (Wasabi 1.x) | coinjoin | planned | high |
-| [H-CJ-WASABI2](heuristics/h-cj-wasabi2.md) | ↳ WabiSabi (Wasabi 2.x and forks) | coinjoin | planned | high |
-| [H-CJ-WHIRLPOOL](heuristics/h-cj-whirlpool.md) | ↳ Whirlpool mix (Samourai / Ashigaru) | coinjoin | planned | high |
-| [H-CJ-WHIRLPOOL-TX0](heuristics/h-cj-whirlpool-tx0.md) | ↳ Whirlpool Tx0 (premix) | coinjoin | planned | high |
+| [H-CJ-STONEWALL](heuristics/h-cj-stonewall.md) | ↳ Stonewall / Stonewall-X2 | coinjoin | implemented | low |
+| [H-CJ-WASABI1](heuristics/h-cj-wasabi1.md) | ↳ ZeroLink (Wasabi 1.x) | coinjoin | implemented | high |
+| [H-CJ-WASABI2](heuristics/h-cj-wasabi2.md) | ↳ WabiSabi (Wasabi 2.x and forks) | coinjoin | implemented | high |
+| [H-CJ-WHIRLPOOL](heuristics/h-cj-whirlpool.md) | ↳ Whirlpool mix (Samourai / Ashigaru) | coinjoin | implemented | high |
+| [H-CJ-WHIRLPOOL-TX0](heuristics/h-cj-whirlpool-tx0.md) | ↳ Whirlpool Tx0 (premix) | coinjoin | implemented | high |
 | [H-COINBASE](heuristics/h-coinbase.md) | Miner attribution | attribution | planned | high |
 | [H-CORR](heuristics/h-corr.md) | Amount/time correlation across services | pattern | planned | medium |
 | [H-FP](heuristics/h-fp.md) | Wallet fingerprinting | fingerprint | implemented | medium |

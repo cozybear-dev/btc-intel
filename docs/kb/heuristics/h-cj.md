@@ -1,6 +1,6 @@
 # H-CJ — CoinJoin detection
 
-> **Family:** coinjoin · **Status in btc-intel:** planned · **Confidence:** high
+> **Family:** coinjoin · **Status in btc-intel:** implemented · **Confidence:** high
 
 ## Summary
 
@@ -38,7 +38,7 @@ Mixing structures that avoid equal outputs (PayJoin, Stonewall) and custodial mi
 
 The `H-CJ` detector emits `coinjoin:<kind>` with the denomination, anonymity set and equal-group count. [H-CIOH](h-cioh.md) and [H-CHG](h-chg.md) are suppressed for multi-party kinds, and tracing stops at CoinJoins unless told to continue.
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/coinjoin.py`.
+Implemented in `backend/btcintel/heuristics/coinjoin.py` (`coinjoin_heuristic`).
 
 ## Case examples
 
