@@ -112,6 +112,9 @@ async def _forward(seed: TraceSeed, policy: TracePolicy, chain: ChainSource, lab
     heap: list[tuple[float, int, int, str, int]] = []
     counter = itertools.count()
     poisoned: set[str] = set()
+    # Outputs paying an address seed start at full value; taint reaching them again (e.g. the
+    # address's own change) is already counted and must not be followed twice.
+    seeded: set[tuple[str, int]] = set()
 
     def follow(tx: Tx, n: int, amount: float, hop: int) -> None:
         target = g.add_output(tx, n, amount)
@@ -138,6 +141,7 @@ async def _forward(seed: TraceSeed, policy: TracePolicy, chain: ChainSource, lab
                 for out in tx.vout:
                     if out.address == seed.address:
                         g.add_tx(tx)
+                        seeded.add((tx.txid, out.n))
                         follow(tx, out.n, float(out.value), 1)
 
     while heap:
@@ -171,13 +175,13 @@ async def _forward(seed: TraceSeed, policy: TracePolicy, chain: ChainSource, lab
                 continue
             poisoned.add(child.txid)
         delta = taint_models.forward(policy.taint_model, child, {sp.vin: amount})
-        targets = sorted(delta.items())
+        targets = [(n, t) for n, t in sorted(delta.items()) if (child.txid, n) not in seeded]
         if policy.peel_mode:
             keep = remainder_output(child)
             for n, t in targets:
                 if n != keep and t > 0:
                     g.stop(g.add_output(child, n, t), "peel_off", t)
-            targets = [(keep, delta.get(keep, 0.0))] if keep is not None else []
+            targets = [(n, t) for n, t in targets if n == keep]
         for n, t in targets:
             if t > 0:
                 follow(child, n, t, hop + 1)
@@ -187,6 +191,9 @@ async def _backward(seed: TraceSeed, policy: TracePolicy, chain: ChainSource, la
                     g: GraphBuilder) -> None:
     heap: list[tuple[float, int, int, str, int]] = []
     counter = itertools.count()
+    # Outputs paying an address seed are traced from their own seed; an input spending one (the
+    # address funding its own change) would trace the same funding twice.
+    seeded: set[tuple[str, int]] = set()
 
     def push(amount: float, hop: int, txid: str, vin: int) -> None:
         heapq.heappush(heap, (-amount, hop, next(counter), txid, vin))
@@ -219,12 +226,15 @@ async def _backward(seed: TraceSeed, policy: TracePolicy, chain: ChainSource, la
             async for tx in txs:
                 received = {o.n: float(o.value) for o in tx.vout if o.address == seed.address}
                 if received:
+                    seeded.update((tx.txid, n) for n in received)
                     seed_outputs(tx, received)
 
     while heap:
         neg, hop, _, txid, vin = heapq.heappop(heap)
         amount = -neg
         txin = g.txs[txid].vin[vin]
+        if (txin.prev_txid, txin.prev_vout) in seeded:
+            continue
         node = addr_node_id(txin.address) if txin.address else tx_node_id(txid)
         if amount < policy.min_value_sats:
             g.stop(node, "min_value", amount)

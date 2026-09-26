@@ -130,3 +130,32 @@ def test_invalid_seeds(kwargs):
 def test_seed_normalisation():
     assert TraceSeed(txid="AB" * 32).txid == "ab" * 32
     assert TraceSeed(address=ADDR[1].upper()).address == ADDR[1]
+
+
+def self_change_chain():
+    """a1 receives 999k, then pays 300k twice, returning change to itself each time."""
+    a = UNTAGGED
+    cb = mk_tx([(None, 0)], [(a[0], 1_000_000)], coinbase=True)
+    fund = mk_tx([(cb, 0)], [(a[1], 999_000)])
+    s1 = mk_tx([(fund, 0)], [(a[2], 300_000), (a[1], 698_000)])
+    s2 = mk_tx([(s1, 1)], [(a[3], 300_000), (a[1], 397_000)])
+    return a, cb, fund, s1, s2
+
+
+async def test_address_seed_forward_counts_self_change_once():
+    a, cb, fund, s1, s2 = self_change_chain()
+    r = await trace(TraceSeed(address=a[1]), TracePolicy(min_value_sats=1), chain=FakeChain([cb, fund, s1, s2]),
+                    labels=make_labels())
+    edges = {e.id: e for e in r.edges}
+    assert edges[f"out:{s2.txid}:0"].taint == pytest.approx(300_000)
+    assert sum(1 for st in r.stops if st.node == f"addr:{a[3]}") == 1
+    assert sum(st.taint for st in r.stops) <= 999_000
+
+
+async def test_address_seed_backward_counts_self_change_once():
+    a, cb, fund, s1, s2 = self_change_chain()
+    r = await trace(TraceSeed(address=a[1]), TracePolicy(direction="backward", min_value_sats=1),
+                    chain=FakeChain([cb, fund, s1, s2]), labels=make_labels())
+    edges = {e.id: e for e in r.edges}
+    assert edges[f"out:{fund.txid}:0"].taint == pytest.approx(999_000)
+    assert sum(st.taint for st in r.stops if st.reason == "coinbase") <= 1_000_000
