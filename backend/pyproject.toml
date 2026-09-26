@@ -32,6 +32,7 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]  # long literals (test vectors, SQL, URLs) are clearer unwrapped
 
 [dependency-groups]
 dev = [
