@@ -9,6 +9,7 @@ from collections.abc import Callable
 from btcintel import __version__
 from btcintel.catalog.loader import CatalogError, check_catalog, load_catalog
 from btcintel.catalog.online import check_urls, verify_seeds
+from btcintel.catalog.render import write_all
 from btcintel.paths import catalog_dir, kb_dir
 
 
@@ -63,6 +64,15 @@ def _catalog_verify_seeds(cat) -> int:
 
 
 CATALOG_COMMANDS.update({"linkcheck": _catalog_linkcheck, "verify-seeds": _catalog_verify_seeds})
+
+
+def _catalog_render(cat) -> int:
+    for path in write_all(cat, kb_dir()):
+        print(f"wrote {path}")
+    return 0
+
+
+CATALOG_COMMANDS["render"] = _catalog_render
 COMMANDS["catalog"] = _cmd_catalog
 
 
@@ -75,6 +85,7 @@ def _build_parser() -> argparse.ArgumentParser:
     cat_sub.add_parser("check", help="validate catalog/*.yaml and docs/kb pages")
     cat_sub.add_parser("linkcheck", help="(network) check that reference URLs resolve")
     cat_sub.add_parser("verify-seeds", help="(network) check incident seeds exist on chain")
+    cat_sub.add_parser("render", help="regenerate docs/kb/index.md and ttp-matrix.md")
     return parser
 
 
