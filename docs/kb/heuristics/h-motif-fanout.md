@@ -1,6 +1,6 @@
 # H-MOTIF-FANOUT — Fan-out / dispersal
 
-> **Family:** pattern · **Status in btc-intel:** planned · **Confidence:** medium
+> **Family:** pattern · **Status in btc-intel:** implemented · **Confidence:** medium
 
 ## Summary
 
@@ -25,7 +25,9 @@ Varying amounts and spreading dispersal over many transactions and blocks.
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/patterns.py`.
+Shape test (`fanout_shape`): ≥10 spendable outputs, ≤3 inputs, not coinbase and not a multi-party CoinJoin. The coefficient of variation of output values separates `dispersal_uniform` (cv < 0.2, confidence 0.6) from `fan_out` (confidence 0.5).
+
+Implemented in `backend/btcintel/heuristics/patterns.py` (`fanout_heuristic`).
 
 ## Case examples
 

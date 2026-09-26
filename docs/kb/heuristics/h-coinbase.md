@@ -1,6 +1,6 @@
 # H-COINBASE — Miner attribution
 
-> **Family:** attribution · **Status in btc-intel:** planned · **Confidence:** high
+> **Family:** attribution · **Status in btc-intel:** implemented · **Confidence:** high
 
 ## Summary
 
@@ -27,7 +27,9 @@ Omitting tags.
 
 Findings `miner:<pool>` (confidence 0.9) or `miner:unknown` with the printable coinbase text. Tags and addresses are imported with `btcintel import-tags pools`.
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/coinbase.py`.
+Pool rules are (tag, pool) pairs matched in order against the decoded coinbase scriptSig; the first match wins.
+
+Implemented in `backend/btcintel/heuristics/coinbase.py` (`coinbase_heuristic`).
 
 ## Case examples
 

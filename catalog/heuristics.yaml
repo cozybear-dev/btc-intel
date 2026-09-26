@@ -291,7 +291,8 @@
 - id: H-PEEL
   name: Peel chain
   family: pattern
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.patterns.peel_heuristic
   confidence: medium
   summary: >-
     A large balance is spent in a long chain of transactions that each peel a small payment off and
@@ -304,7 +305,8 @@
 - id: H-MOTIF-FANOUT
   name: Fan-out / dispersal
   family: pattern
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.patterns.fanout_heuristic
   confidence: medium
   summary: >-
     Few inputs, many outputs. Uniform output amounts suggest deliberate dispersal/structuring
@@ -317,7 +319,8 @@
 - id: H-MOTIF-FANIN
   name: Fan-in / consolidation
   family: pattern
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.patterns.fanin_heuristic
   confidence: medium
   summary: >-
     Many inputs, one or two outputs. Services sweep deposit addresses; launderers consolidate
@@ -342,7 +345,8 @@
 - id: H-XCHAIN
   name: Cross-chain exit markers
   family: crosschain
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.crosschain.crosschain_heuristic
   confidence: high
   summary: >-
     THORChain inbound transactions carry an OP_RETURN memo naming the destination chain, asset and
@@ -368,7 +372,8 @@
 - id: H-COINBASE
   name: Miner attribution
   family: attribution
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.coinbase.coinbase_heuristic
   confidence: high
   summary: >-
     Coinbase transactions embed pool tags in the scriptSig (e.g. "/ViaBTC/") and pay pool

@@ -26,20 +26,20 @@ Analysis techniques (`H-*`), obfuscation / laundering / theft techniques (`O-*`)
 | [H-CJ-WASABI2](heuristics/h-cj-wasabi2.md) | ↳ WabiSabi (Wasabi 2.x and forks) | coinjoin | implemented | high |
 | [H-CJ-WHIRLPOOL](heuristics/h-cj-whirlpool.md) | ↳ Whirlpool mix (Samourai / Ashigaru) | coinjoin | implemented | high |
 | [H-CJ-WHIRLPOOL-TX0](heuristics/h-cj-whirlpool-tx0.md) | ↳ Whirlpool Tx0 (premix) | coinjoin | implemented | high |
-| [H-COINBASE](heuristics/h-coinbase.md) | Miner attribution | attribution | planned | high |
+| [H-COINBASE](heuristics/h-coinbase.md) | Miner attribution | attribution | implemented | high |
 | [H-CORR](heuristics/h-corr.md) | Amount/time correlation across services | pattern | planned | medium |
 | [H-FP](heuristics/h-fp.md) | Wallet fingerprinting | fingerprint | implemented | medium |
-| [H-MOTIF-FANIN](heuristics/h-motif-fanin.md) | Fan-in / consolidation | pattern | planned | medium |
-| [H-MOTIF-FANOUT](heuristics/h-motif-fanout.md) | Fan-out / dispersal | pattern | planned | medium |
+| [H-MOTIF-FANIN](heuristics/h-motif-fanin.md) | Fan-in / consolidation | pattern | implemented | medium |
+| [H-MOTIF-FANOUT](heuristics/h-motif-fanout.md) | Fan-out / dispersal | pattern | implemented | medium |
 | [H-MOTIF-SWEEP](heuristics/h-motif-sweep.md) | Mass key-compromise sweep | pattern | planned | medium |
 | [H-NETWORK](heuristics/h-network.md) | Network-layer deanonymisation | network | kb_only | medium |
 | [H-OSINT](heuristics/h-osint.md) | Off-chain attribution | attribution | kb_only | high |
-| [H-PEEL](heuristics/h-peel.md) | Peel chain | pattern | planned | medium |
+| [H-PEEL](heuristics/h-peel.md) | Peel chain | pattern | implemented | medium |
 | [H-PUBKEY](heuristics/h-pubkey.md) | Public-key reuse across scripts | clustering | planned | medium |
 | [H-REUSE](heuristics/h-reuse.md) | Address reuse | clustering | kb_only | high |
 | [H-TAINT](heuristics/h-taint.md) | Taint analysis models | taint | planned | medium |
 | [H-TEMPORAL](heuristics/h-temporal.md) | Temporal profiling | temporal | planned | low |
-| [H-XCHAIN](heuristics/h-xchain.md) | Cross-chain exit markers | crosschain | planned | high |
+| [H-XCHAIN](heuristics/h-xchain.md) | Cross-chain exit markers | crosschain | implemented | high |
 
 ## Obfuscation, laundering and theft techniques
 

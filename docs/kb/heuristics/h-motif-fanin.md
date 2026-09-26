@@ -1,6 +1,6 @@
 # H-MOTIF-FANIN — Fan-in / consolidation
 
-> **Family:** pattern · **Status in btc-intel:** planned · **Confidence:** medium
+> **Family:** pattern · **Status in btc-intel:** implemented · **Confidence:** medium
 
 ## Summary
 
@@ -24,7 +24,9 @@ Avoiding consolidation (keeping many small UTXOs).
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/patterns.py`.
+Shape test (`fanin_shape`): ≥10 inputs, ≤2 spendable outputs, not coinbase and not a multi-party CoinJoin. Emits `consolidation` (confidence 0.6) with the input count and the number of distinct input addresses.
+
+Implemented in `backend/btcintel/heuristics/patterns.py` (`fanin_heuristic`).
 
 ## Case examples
 

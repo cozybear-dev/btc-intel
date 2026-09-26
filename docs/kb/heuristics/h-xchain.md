@@ -1,6 +1,6 @@
 # H-XCHAIN — Cross-chain exit markers
 
-> **Family:** crosschain · **Status in btc-intel:** planned · **Confidence:** high
+> **Family:** crosschain · **Status in btc-intel:** implemented · **Confidence:** high
 
 ## Summary
 
@@ -38,7 +38,9 @@ Protocols without memos (Chainflip deposit channels, bridges) need address attri
 
 Findings `thorchain:<action>` (swap, add, withdraw, donate, outbound, refund) with asset and destination, and `omni_layer`.
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/crosschain.py`.
+THORChain memo grammar: `SWAP:ASSET:DEST[:LIM…]` (aliases `s`, `=`, `=<`), `ADD:POOL[:PAIRED]` (`a`, `+`), `WITHDRAW:POOL:BPS` (`wd`, `-`), `DONATE:POOL` (`d`), and the outbound `OUT:<hash>` / `REFUND:<hash>`. The asset must look like `CHAIN.ASSET`, `CHAIN~ASSET` or `CHAIN/ASSET`, which rejects arbitrary OP_RETURN text. THORChain markers carry confidence 0.9; OP_RETURN payloads starting with `omni` are `omni_layer` (0.95).
+
+Implemented in `backend/btcintel/heuristics/crosschain.py` (`crosschain_heuristic`).
 
 ## Case examples
 

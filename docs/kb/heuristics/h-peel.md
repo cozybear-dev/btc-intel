@@ -1,6 +1,6 @@
 # H-PEEL — Peel chain
 
-> **Family:** pattern · **Status in btc-intel:** planned · **Confidence:** medium
+> **Family:** pattern · **Status in btc-intel:** implemented · **Confidence:** medium
 
 ## Summary
 
@@ -32,7 +32,9 @@ Splitting into many chains, varying the peel ratio, or inserting CoinJoins.
 
 `peel_step` findings on individual transactions; trace peel mode follows only the remainder (change, or else the largest output); `follow_peel_chain` and `POST /api/peel` walk a whole chain.
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/patterns.py`.
+Shape test (`peel_shape`): not coinbase, 1–2 inputs, exactly 2 spendable outputs, and the larger output holds ≥75% of the output value. Evidence: `remainder_output`, `peel_output`, `peel_value`, `remainder_share`; confidence 0.5.
+
+Implemented in `backend/btcintel/heuristics/patterns.py` (`peel_heuristic`).
 
 ## Case examples
 
