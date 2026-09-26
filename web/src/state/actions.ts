@@ -110,7 +110,7 @@ function listen(jobId: string, kind: JobState["kind"], onDone?: () => Promise<vo
   unsubscribe = subscribeJob(jobId, (e) => {
     if (activeJob !== token) return;
     if (e.type === "nodes" || e.type === "edges" || e.type === "stop") {
-      st().updateGraph((g) => applyJobEvent(g, e));
+      st().updateGraph((g) => applyJobEvent(g, e), true);
       const g = st().graph;
       st().patchJob({ nodes: Object.keys(g.nodes).length, stops: g.stops.length });
     } else if (e.type === "section") {
@@ -134,11 +134,12 @@ export async function startTrace(seed: TraceSeed, policy: Partial<TracePolicy>) 
   if (res) listen(res.job_id, "trace");
 }
 
-/** Unsaved work that a new analysis would discard: edits to a saved case or a hand-built graph.
- *  A fresh analysis graph can be regenerated, so it doesn't count. */
+/** Unsaved work that a new analysis would discard: changes to a saved case, a hand-built graph, or
+ *  the user's own edits and notes on top of an analysis. An analysis graph built only by its job's
+ *  events can be regenerated, so it doesn't count. */
 export function hasUnsavedWork(): boolean {
   const s = st();
-  return s.dirty && (s.caseId !== null || s.analysis === null);
+  return s.dirty && (s.caseId !== null || s.analysis === null || s.edited);
 }
 
 /** Run the automatic analysis of an address as a fresh investigation. Returns false when the user

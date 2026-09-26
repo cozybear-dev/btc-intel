@@ -192,6 +192,19 @@ test("a new analysis asks before discarding a hand-built graph, but not a previo
   confirm.mockRestore();
 });
 
+test("edits or notes on top of an analysis count as unsaved work", async () => {
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+  mocked.analyze.mockResolvedValue({ job_id: "a5" });
+  await actions.startAnalysis("bc1qaddr");
+  handlers.onEvent!({ seq: 0, type: "nodes", items: [{ id: "addr:bc1qaddr", kind: "address", label: "a", data: {} }] });
+  expect(actions.hasUnsavedWork()).toBe(false); // job events alone are regenerable
+  useWorkbench.getState().setNotes("suspect: exchange deposit");
+  expect(actions.hasUnsavedWork()).toBe(true);
+  expect(await actions.startAnalysis("bc1qother")).toBe(false);
+  expect(confirm).toHaveBeenCalledTimes(1);
+  confirm.mockRestore();
+});
+
 test("saving an analysis names the case and puts the report into empty notes", async () => {
   mocked.analyze.mockResolvedValue({ job_id: "a3" });
   await actions.startAnalysis("bc1qverylongaddress0000");

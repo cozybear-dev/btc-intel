@@ -23,6 +23,8 @@ interface Data {
   caseName: string;
   notes: string;
   dirty: boolean;
+  /** Changed by the user (not only by a job's graph events) since the last save. */
+  edited: boolean;
   job: JobState | null;
   busy: number;
   error: string | null;
@@ -31,7 +33,7 @@ interface Data {
 }
 
 export interface WorkbenchState extends Data {
-  updateGraph: (fn: (g: GraphModel) => GraphModel) => void;
+  updateGraph: (fn: (g: GraphModel) => GraphModel, byJob?: boolean) => void;
   select: (id: string | null) => void;
   setError: (msg: string | null) => void;
   setMessage: (msg: string | null) => void;
@@ -52,12 +54,12 @@ export interface WorkbenchState extends Data {
 
 const initial = (): Data => ({
   graph: emptyGraph(), selected: null, groupClusters: true, caseId: null, caseName: "", notes: "",
-  dirty: false, job: null, busy: 0, error: null, message: null, analysis: null,
+  dirty: false, edited: false, job: null, busy: 0, error: null, message: null, analysis: null,
 });
 
 export const useWorkbench = create<WorkbenchState>()((set) => ({
   ...initial(),
-  updateGraph: (fn) => set((s) => ({ graph: fn(s.graph), dirty: true })),
+  updateGraph: (fn, byJob = false) => set((s) => ({ graph: fn(s.graph), dirty: true, edited: s.edited || !byJob })),
   select: (id) => set({ selected: id }),
   setError: (error) => set({ error }),
   setMessage: (message) => set({ message }),
@@ -68,9 +70,9 @@ export const useWorkbench = create<WorkbenchState>()((set) => ({
   setGroupClusters: (groupClusters) => set({ groupClusters }),
   setCase: ({ id, name, notes, graph }) =>
     set((s) => ({ caseId: id, caseName: name, notes, graph: graph ?? s.graph, selected: null })),
-  setCaseName: (caseName) => set({ caseName, dirty: true }),
-  setNotes: (notes) => set({ notes, dirty: true }),
-  markClean: () => set({ dirty: false }),
+  setCaseName: (caseName) => set({ caseName, dirty: true, edited: true }),
+  setNotes: (notes) => set({ notes, dirty: true, edited: true }),
+  markClean: () => set({ dirty: false, edited: false }),
   reset: () => set(initial()),
   setAnalysis: (analysis) => set({ analysis }),
   patchAnalysis: (patch) => set((s) => (s.analysis ? { analysis: { ...s.analysis, ...patch } } : {})),
