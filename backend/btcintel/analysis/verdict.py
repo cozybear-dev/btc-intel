@@ -52,6 +52,7 @@ def label_reasons(address: str, info: dict[str, Any], cluster: ClusterSummary | 
             level = LEVELS[max(0, LEVELS.index(level) - 1)]
             text += "; the cluster has conflicting labels, so this may be a merge error"
         reasons.append(Reason(level=level, rule="cluster_label", text=text))
+    reasons.sort(key=lambda r: -RISK_ORDER[r.level])
     return reasons[:MAX_LABEL_REASONS]
 
 

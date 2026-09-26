@@ -91,3 +91,9 @@ def test_reasons_are_sorted_worst_first():
 def test_no_incoming_funds():
     v = verdict(exposure("backward", total=0), exposure("forward", total=0))
     assert v.level == "none" and not v.low_confidence and v.coverage.startswith("No incoming funds")
+
+
+def test_many_label_reasons_keep_the_worst():
+    tags = [tag(A, "Casino", "gambling"), tag(A, "Mixer pool", "coinjoin"), tag(A, "OTC desk", "otc_broker"), tag(A, "Hydra", "darknet_market")]
+    v = verdict(info={"tags": tags}, final=False)
+    assert v.level == "severe" and v.reasons[0].text.startswith("Labeled Hydra") and len(v.reasons) == 3
