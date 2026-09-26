@@ -1,1 +1,286 @@
-[]
+- id: O-KEY-COMPROMISE
+  name: Key or signing-infrastructure compromise
+  tactic: acquisition
+  summary: >-
+    Theft by stealing hot-wallet keys or subverting the signing workflow (e.g. the 2025 Bybit
+    Safe{Wallet} UI supply-chain attack, DMM Bitcoin 2024). Tracing starts from the victim's
+    disclosed outflows.
+  examples: [Mt. Gox 2011–2014, Bitfinex 2016, DMM Bitcoin 2024, Bybit 2025, Bitget 2026]
+  detected_by: [H-MOTIF-FANOUT, H-PEEL]
+  fatf: [source_of_funds]
+  refs: [doj-bitfinex-2022, cybernews-dmm-2024, trm-bybit-2025, hackread-bitget-2026]
+  kb: techniques/o-key-compromise.md
+- id: O-WEAK-KEY-SWEEP
+  name: Weak key-generation exploitation
+  tactic: acquisition
+  summary: >-
+    Keys generated with too little entropy are brute-forced offline and swept, often years later
+    and within minutes across many addresses (LuBian 2020, Milk Sad 2023, Coldcard Mk3 2026).
+  examples: [LuBian 2020, Milk Sad (libbitcoin bx) 2023, Coldcard Mk3 firmware 2026]
+  detected_by: [H-MOTIF-SWEEP, H-TEMPORAL]
+  fatf: [source_of_funds]
+  refs: [arkham-lubian-2025, milksad-2023, coindesk-coldcard-2026]
+  kb: techniques/o-weak-key-sweep.md
+- id: O-PROTOCOL-EXPLOIT
+  name: Protocol or platform bug exploitation
+  tactic: acquisition
+  summary: >-
+    Funds taken by exploiting a logic bug: the Silk Road withdrawal race (2012) and the Liquid
+    peg-in bug that minted unbacked L-BTC redeemed via peg-out (2026).
+  examples: [Silk Road withdrawal exploit 2012, Liquid Network 2026]
+  detected_by: [H-TEMPORAL]
+  fatf: [source_of_funds]
+  refs: [doj-zhong-2022, coindesk-liquid-2026, chainalysis-liquid-2026]
+  kb: techniques/o-protocol-exploit.md
+- id: O-SOCIAL-ENGINEERING
+  name: Victim social engineering
+  tactic: acquisition
+  summary: >-
+    Attackers impersonate support staff to obtain credentials or keys from individual holders,
+    then drain their wallets (the $243M Genesis-creditor theft in 2024, the $330M theft in 2025).
+  examples: [Genesis creditor theft Aug 2024, elderly holder theft Apr 2025]
+  detected_by: [H-PEEL]
+  fatf: [source_of_funds]
+  refs: [theblock-genesis-2024, cryptoslate-330m-2025]
+  kb: techniques/o-social-engineering.md
+- id: O-RANSOM
+  name: Ransomware extortion payments
+  tactic: acquisition
+  summary: >-
+    Victims pay ransom to a fresh address; proceeds are split between operator and affiliate and
+    moved on through hops, mixers or high-risk exchanges (Colonial Pipeline 2021).
+  examples: [Colonial Pipeline / DarkSide 2021]
+  detected_by: [H-MOTIF-FANOUT, H-PEEL]
+  fatf: [source_of_funds]
+  refs: [doj-colonial-2021, ransomwhere]
+  kb: techniques/o-ransom.md
+- id: O-PEEL-CHAIN
+  name: Peel chains
+  tactic: layering
+  summary: >-
+    A large amount is moved through long chains of 1-in/2-out transactions, peeling small amounts
+    to deposits while the remainder moves to fresh addresses.
+  examples: [Bitfinex 2016 laundering, 2025 $330M theft]
+  detected_by: [H-PEEL, H-CHG]
+  evades: [H-CIOH]
+  fatf: [transaction_patterns]
+  refs: [meiklejohn2013, kappos2022, cryptoslate-330m-2025]
+  kb: techniques/o-peel-chain.md
+- id: O-DISPERSAL
+  name: Dispersal and structuring
+  tactic: layering
+  summary: >-
+    Proceeds are split across hundreds to thousands of addresses in uniform amounts to overwhelm
+    investigators and stay under monitoring thresholds (Bybit BTC dispersed to ~11,000 addresses).
+  examples: [Bybit 2025]
+  detected_by: [H-MOTIF-FANOUT, H-MOTIF-FANIN]
+  fatf: [transaction_patterns]
+  refs: [trm-bybit-2025, dlnews-bybit-2025]
+  kb: techniques/o-dispersal.md
+- id: O-DORMANCY
+  name: Dormancy and delayed laundering
+  tactic: layering
+  summary: >-
+    Stolen coins are left untouched for months or years before being moved, waiting for attention
+    to fade (Silk Road/Zhong, Bitfinex, LuBian).
+  examples: [Silk Road/Zhong 2012–2021, Bitfinex 2016–2022, LuBian 2020–2025]
+  detected_by: [H-TEMPORAL]
+  fatf: [transaction_patterns]
+  refs: [doj-zhong-2022, doj-bitfinex-2022, arkham-lubian-2025]
+  kb: techniques/o-dormancy.md
+- id: O-RICOCHET
+  name: Hop padding (Ricochet)
+  tactic: layering
+  summary: >-
+    Several intermediate self-transfers are inserted before the destination so that shallow
+    (1–2 hop) exchange screening sees no direct exposure (Samourai's Ricochet service).
+  examples: [Samourai Ricochet]
+  detected_by: [H-TAINT, H-PEEL]
+  fatf: [anonymity]
+  refs: [doj-samourai-2024]
+  kb: techniques/o-ricochet.md
+- id: O-CUSTODIAL-MIXER
+  name: Custodial mixers / tumblers
+  tactic: obfuscation
+  oak: [OAK-T7.001]
+  summary: >-
+    Deposits are pooled and paid out from unrelated coins after delays (Bitcoin Fog, Helix,
+    ChipMixer, Blender.io, Sinbad, Cryptomixer, the last taken down in Dec 2025). Detection relies
+    on address tags of mixer deposit clusters plus amount/time correlation.
+  examples: [Bitcoin Fog, Helix, ChipMixer, Blender.io, Sinbad, Cryptomixer]
+  detected_by: [H-CORR]
+  fatf: [anonymity]
+  refs: [europol-cryptomixer-2025, dfrws2025tumbler, fatf2020redflags, doj-chipmixer-2023, treasury-blender-2022, treasury-sinbad-2023]
+  kb: techniques/o-custodial-mixer.md
+- id: O-COINJOIN
+  name: Non-custodial CoinJoin
+  tactic: obfuscation
+  oak: [OAK-T7.001]
+  summary: >-
+    Users jointly build transactions with equal outputs so input→output links are ambiguous
+    (Wasabi 2.x on community coordinators such as kruw.io, Ashigaru Whirlpool, JoinMarket/Jam).
+  examples: [Wasabi 2.x, Ginger, Ashigaru Whirlpool, JoinMarket]
+  detected_by: [H-CJ, H-CJ-POST]
+  evades: [H-CIOH, H-CHG]
+  fatf: [anonymity]
+  refs: [popets2026coinjoin, atlas21-coinjoin-2026, doj-samourai-2024]
+  kb: techniques/o-coinjoin.md
+- id: O-PAYJOIN
+  name: Steganographic multi-party transactions
+  tactic: obfuscation
+  summary: >-
+    PayJoin (BIP78, BIP77 async), Stowaway and Stonewall-X2 make a payment where the receiver
+    contributes an input, so the transaction looks ordinary but violates CIOH and the unnecessary-
+    input change heuristic.
+  examples: [BIP78 PayJoin, BIP77 async payjoin, Stowaway, Stonewall-X2]
+  detected_by: [H-CJ-STONEWALL]
+  evades: [H-CIOH, H-CHG-UNNECESSARY]
+  fatf: [anonymity]
+  refs: [bip78, bip77, bitcoinwiki-privacy]
+  kb: techniques/o-payjoin.md
+- id: O-DARKNET-AS-MIXER
+  name: Darknet markets and gambling sites as mixers
+  tactic: obfuscation
+  summary: >-
+    Funds are deposited to and withdrawn from custodial darknet-market or gambling accounts,
+    which breaks the on-chain link like a mixer (AlphaBay in the Bitfinex laundering). Detection
+    relies on address tags of those services.
+  examples: [AlphaBay (Bitfinex laundering)]
+  fatf: [anonymity, senders_recipients]
+  refs: [doj-bitfinex-2022, doj-bitfinex-2024, chainalysis-bitfinex-2023, fatf2020redflags]
+  kb: techniques/o-darknet-as-mixer.md
+- id: O-SCRIPT-PRIVACY
+  name: Protocol privacy features
+  tactic: obfuscation
+  summary: >-
+    Taproot hides multisig and scripts behind single keys, Silent Payments (BIP352) and BIP47
+    payment codes avoid address reuse, reducing script- and reuse-based linking.
+  examples: [Taproot key-path spends, Silent Payments, BIP47 PayNyms]
+  evades: [H-REUSE, H-PUBKEY, H-FP]
+  detected_by: [H-FP]
+  fatf: [anonymity]
+  refs: [bip341, bip352, bip47]
+  kb: techniques/o-script-privacy.md
+- id: O-CHANGE-AVOIDANCE
+  name: Change-heuristic evasion
+  tactic: obfuscation
+  summary: >-
+    Exact-amount spends without change, change matching the payee's script type, randomised
+    ordering, non-round payments and fingerprint mimicry defeat change detection.
+  examples: [branch-and-bound coin selection, script-type matching, fingerprint mimicry]
+  evades: [H-CHG, H-FP]
+  detected_by: [H-CHG-FPCONT]
+  fatf: [anonymity]
+  refs: [bitcoinwiki-privacy, misra2024]
+  kb: techniques/o-change-avoidance.md
+- id: O-CHAIN-HOP
+  name: Cross-chain bridges and swap protocols
+  tactic: chain_hopping
+  oak: [OAK-T7.003]
+  summary: >-
+    Value is moved to another chain through THORChain, Chainflip or bridges (Avalanche BTC.b,
+    WBTC, tBTC) to break single-chain tracing (DMM 2024, Bybit 2025).
+  examples: [THORChain, Chainflip, Avalanche Bridge, Threshold tBTC, renBridge (defunct)]
+  detected_by: [H-XCHAIN]
+  fatf: [anonymity, transaction_patterns]
+  refs: [thorchain-memos, trm-bybit-2025, cybernews-dmm-2024]
+  kb: techniques/o-chain-hop.md
+- id: O-INSTANT-SWAP
+  name: Instant exchangers
+  tactic: chain_hopping
+  summary: >-
+    Account-less swap services convert BTC into other assets with little or no KYC (eXch until its
+    2025 closure, FixedFloat, SideShift, ChangeNOW). Detection relies on address tags of the
+    services plus amount/time correlation.
+  examples: [eXch, FixedFloat, SideShift, ChangeNOW]
+  detected_by: [H-CORR]
+  fatf: [anonymity]
+  refs: [dlnews-bybit-2025, cryptoslate-330m-2025]
+  kb: techniques/o-instant-swap.md
+- id: O-PRIVACY-COIN
+  name: Swaps into privacy coins
+  tactic: chain_hopping
+  oak: [OAK-T7.005]
+  summary: >-
+    BTC is swapped into Monero (often via instant exchangers), ending public-ledger traceability
+    (the $243M 2024 and $330M 2025 thefts). Detection relies on tags of the swap services used.
+  examples: [$243M Genesis-creditor theft 2024, $330M theft 2025]
+  fatf: [anonymity]
+  refs: [theblock-genesis-2024, cryptoslate-330m-2025, fatf2020redflags]
+  kb: techniques/o-privacy-coin.md
+- id: O-LIGHTNING
+  name: Lightning Network
+  tactic: offchain
+  summary: >-
+    Funds enter payment channels (visible only as channel open/close on chain) and move off-chain,
+    including via submarine swaps. Detection relies on tags of known node and swap-service
+    addresses; channel-funding detection is planned under H-XCHAIN.
+  examples: [private channels, submarine swaps]
+  fatf: [anonymity]
+  refs: [lightning-bolts]
+  kb: techniques/o-lightning.md
+- id: O-SIDECHAIN
+  name: Sidechains (Liquid)
+  tactic: offchain
+  summary: >-
+    Peg-in to Liquid moves BTC into a federation wallet; confidential transactions hide amounts
+    and assets on the sidechain until peg-out. Detection relies on tags of federation addresses.
+  examples: [Liquid Network]
+  fatf: [anonymity]
+  refs: [chainalysis-liquid-2026, coindesk-liquid-2026]
+  kb: techniques/o-sidechain.md
+- id: O-ECASH
+  name: Chaumian e-cash mints
+  tactic: offchain
+  summary: >-
+    Fedimint federations and Cashu mints issue blinded e-cash tokens against BTC, so transfers
+    inside the mint are unlinkable. Detection relies on tags of mint addresses.
+  examples: [Fedimint, Cashu]
+  fatf: [anonymity]
+  refs: [fedimint, cashu]
+  kb: techniques/o-ecash.md
+- id: O-NESTED-SERVICE
+  name: Nested services and exchange deposit layering
+  tactic: integration
+  oak: [OAK-T7.002]
+  summary: >-
+    Launderers deposit through accounts of other services hosted at a large exchange, or structure
+    deposits across many exchange accounts to avoid thresholds. Detection relies on exchange tags
+    and deposit-cluster analysis.
+  examples: [nested exchange accounts, structured CEX deposits]
+  detected_by: [H-MOTIF-FANIN]
+  fatf: [senders_recipients, transaction_patterns]
+  refs: [oak, fatf2020redflags]
+  kb: techniques/o-nested-service.md
+- id: O-OTC-P2P
+  name: OTC brokers, P2P markets and guarantee marketplaces
+  tactic: integration
+  summary: >-
+    Proceeds are sold for fiat or stablecoins via OTC brokers, P2P venues or guarantee
+    marketplaces such as Huione Guarantee (DMM 2024). Detection relies on address tags.
+  examples: [Huione Guarantee, Chinese OTC networks, Bisq, HodlHodl]
+  fatf: [senders_recipients]
+  refs: [invezz-dmm-huione-2024, cybernews-dmm-2024]
+  kb: techniques/o-otc-p2p.md
+- id: O-HIGH-RISK-EXCHANGE
+  name: High-risk exchanges
+  tactic: integration
+  summary: >-
+    Exchanges with no or weak KYC/AML that knowingly serve criminals (BTC-e laundered Mt. Gox
+    proceeds; Garantex processed ≥$96B before its 2025 takedown). Detection relies on tags.
+  examples: [BTC-e, Garantex, Grinex, Bitzlato]
+  fatf: [senders_recipients, geographical]
+  refs: [doj-btce-2024, doj-garantex-2025]
+  kb: techniques/o-high-risk-exchange.md
+- id: O-FAKE-KYC
+  name: Fraudulent identities and money mules
+  tactic: integration
+  oak: [OAK-T8.004]
+  summary: >-
+    Accounts at on/off-ramps are opened with fictitious or borrowed identities (the Bitfinex
+    launderers used fictitious identities). Off-chain; on-chain detection relies on tags of the
+    deposit addresses involved.
+  examples: [Bitfinex laundering accounts]
+  fatf: [senders_recipients]
+  refs: [doj-bitfinex-2022, fatf2020redflags]
+  kb: techniques/o-fake-kyc.md
