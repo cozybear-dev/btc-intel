@@ -5,11 +5,17 @@ from __future__ import annotations
 import argparse
 import sys
 from collections.abc import Callable
+from pathlib import Path
 
 from btcintel import __version__
 from btcintel.catalog.loader import CatalogError, check_catalog, load_catalog
 from btcintel.catalog.online import check_urls, verify_seeds
 from btcintel.catalog.render import write_all
+from btcintel.config import load_settings
+from btcintel.db import open_intel_db
+from btcintel.labels import importers
+from btcintel.labels.store import TagStore
+from btcintel.labels.taxonomy import Taxonomy
 from btcintel.paths import catalog_dir, kb_dir
 
 
@@ -73,6 +79,55 @@ def _catalog_render(cat) -> int:
 
 
 CATALOG_COMMANDS["render"] = _catalog_render
+
+
+def _label_env():
+    settings = load_settings()
+    store = TagStore(open_intel_db(settings.intel_path))
+    taxonomy = Taxonomy.from_catalog(load_catalog(settings.catalog_dir))
+    return settings, store, taxonomy
+
+
+def _cmd_import_tags(args: argparse.Namespace) -> int:
+    settings, store, taxonomy = _label_env()
+    source = args.source
+    if source == "tagpack":
+        if not args.path:
+            print("a TagPack path is required", file=sys.stderr)
+            return 2
+        path = Path(args.path)
+        report = importers.import_tagpack_text(store, taxonomy, path.read_text(encoding="utf-8"),
+                                               args.pack or f"file:{path.stem}")
+    else:
+        url = {"graphsense": importers.GRAPHSENSE_TARBALL_URL, "ofac": importers.OFAC_SDN_URL,
+               "pools": importers.POOLS_URL, "ransomwhere": importers.RANSOMWHERE_URL}[source]
+        print(f"downloading {url} …", file=sys.stderr)
+        data = importers.fetch(url, proxy=settings.proxy)
+        report = {
+            "graphsense": lambda: importers.import_graphsense_tarball(store, taxonomy, data),
+            "ofac": lambda: importers.import_ofac(store, data),
+            "pools": lambda: importers.import_pools(store, data),
+            "ransomwhere": lambda: importers.import_ransomwhere(store, data),
+        }[source]()
+    print(f"imported {report.tags} tags from {report.packs} pack(s); "
+          f"{len(report.warnings)} warning(s), {len(report.errors)} error(s)")
+    for line in (report.errors + report.warnings)[:20]:
+        print(f"  {line}", file=sys.stderr)
+    return 0
+
+
+def _cmd_tags(args: argparse.Namespace) -> int:
+    _, store, taxonomy = _label_env()
+    tags = store.for_address(args.address)
+    for t in tags:
+        print(f"{t.label}\t{t.category}\t{t.abuse or '-'}\trisk={taxonomy.risk_of_tag(t)}\t"
+              f"{t.confidence}\t{t.pack}\t{t.source}")
+    if not tags:
+        print("no tags")
+    return 0
+
+
+COMMANDS.update({"import-tags": _cmd_import_tags, "tags": _cmd_tags})
 COMMANDS["catalog"] = _cmd_catalog
 
 
@@ -86,6 +141,12 @@ def _build_parser() -> argparse.ArgumentParser:
     cat_sub.add_parser("linkcheck", help="(network) check that reference URLs resolve")
     cat_sub.add_parser("verify-seeds", help="(network) check incident seeds exist on chain")
     cat_sub.add_parser("render", help="regenerate docs/kb/index.md and ttp-matrix.md")
+    imp = sub.add_parser("import-tags", help="import attribution tags")
+    imp.add_argument("source", choices=["graphsense", "ofac", "pools", "ransomwhere", "tagpack"])
+    imp.add_argument("path", nargs="?", help="TagPack YAML file (source=tagpack)")
+    imp.add_argument("--pack", help="pack name for a TagPack file")
+    tg = sub.add_parser("tags", help="show tags for an address")
+    tg.add_argument("address")
     return parser
 
 
