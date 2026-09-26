@@ -104,11 +104,18 @@ def classify_coinjoin(tx: Tx) -> CoinJoinMatch | None:
     if (anonset >= 10 and 7_000_000 <= denom <= 13_000_000
             and in_types == {"v0_p2wpkh"} and out_types == {"v0_p2wpkh"}):
         return match("wasabi1", denom, anonset)
+    # Dumplings' guard for equal-output CoinJoins: fewer distinct input addresses than equal outputs
+    # means one actor (e.g. an exchange batch payout), not several participants.
+    if len(set(tx.input_addresses())) < anonset:
+        return None
     if anonset >= 3 and n_in >= anonset and n_out <= 2 * anonset + 1 and n_opret == 0:
         return match("joinmarket", denom, anonset)
     if n_out == 4 and anonset == 2 and groups == 1 and n_in >= 2:
         return match("stonewall", denom, anonset)
-    if anonset >= 2 and n_in >= 2:
+    # Each participant receives at most one equal output and one change output (+1 for a fee output);
+    # far more outputs than that is a batch payout that happens to repeat an amount.
+    equal_outputs = sum(c for c in counts.values() if c >= 2)
+    if anonset >= 2 and n_in >= 2 and n_out <= 2 * equal_outputs + 1:
         return match("generic", denom, anonset)
     return None
 

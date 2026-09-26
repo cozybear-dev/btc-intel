@@ -42,6 +42,26 @@ def test_ordinary_transactions():
     assert classify_coinjoin(mk_tx([(None, 0)], [("m", 312_500_000)], coinbase=True)) is None
 
 
+def test_single_actor_equal_outputs_are_not_coinjoins():
+    """Dumplings' guard: distinct input addresses must cover the equal outputs (else one actor)."""
+    one_owner = mk_tx([("hot", 4_000_000_000)] * 13,
+                      [(f"p{i}", 20_000) for i in range(4)] + [(f"q{i}", 1_000_000 + i) for i in range(47)])
+    assert classify_coinjoin(one_owner) is None
+    three_owners = mk_tx([(f"hot{i % 3}", 4_000_000_000) for i in range(18)],
+                         [(f"p{i}", 20_000) for i in range(13)] + [(f"q{i}", 1_000_000 + i) for i in range(36)])
+    assert classify_coinjoin(three_owners) is None
+    jm_shape_two_owners = mk_tx([(f"w{i % 2}", 40_000_000) for i in range(11)],
+                                [(f"e{i}", 35_281_835) for i in range(5)] + [(f"c{i}", 1_000 + i) for i in range(4)])
+    assert classify_coinjoin(jm_shape_two_owners) is None
+
+
+def test_batch_payout_output_structure_is_not_a_coinjoin():
+    """Each participant gets at most one equal output and one change output (+1 fee output)."""
+    many_owners = mk_tx([(f"hot{i}", 4_000_000_000) for i in range(15)],
+                        [(f"p{i}", 20_000) for i in range(7)] + [(f"q{i}", 1_000_000 + i) for i in range(41)])
+    assert classify_coinjoin(many_owners) is None
+
+
 def test_multiparty_excludes_tx0():
     assert "whirlpool_tx0" not in MULTIPARTY_KINDS
     assert is_multiparty(s.whirlpool_mix()) and not is_multiparty(s.whirlpool_tx0())

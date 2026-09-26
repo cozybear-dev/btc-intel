@@ -16,6 +16,7 @@ A JoinMarket-style round from the Dumplings data had 11 inputs and 9 outputs (5 
 ## Signals and thresholds
 
 - Largest equal group n ≥ 3; `n_in ≥ n`; `n_out ≤ 2n + 1`; no OP_RETURN.
+- Single-actor guard (as in Dumplings' other-CoinJoin rule): the number of distinct input addresses must be at least the number of equal outputs, otherwise the transaction is one actor's batch, not several participants.
 
 ## False positives and limitations
 

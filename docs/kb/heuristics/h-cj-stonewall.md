@@ -17,6 +17,7 @@ The transaction imitates a two-party mini CoinJoin. Because it can really be two
 ## Signals and thresholds
 
 - Exactly four spendable outputs, exactly one equal-value pair, at least two inputs.
+- Single-actor guard (as in Dumplings' other-CoinJoin rule): the number of distinct input addresses must be at least the number of equal outputs, otherwise the transaction is one actor's batch, not several participants.
 
 ## False positives and limitations
 
