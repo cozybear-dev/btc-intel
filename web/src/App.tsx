@@ -9,6 +9,7 @@ import KbBrowser from "./components/KbBrowser";
 import SearchBar from "./components/SearchBar";
 import StatusBar from "./components/StatusBar";
 import TracePanel from "./components/TracePanel";
+import { exportPng as renderPng } from "./export/export";
 import { navigate, useRoute } from "./lib/route";
 import { useWorkbench } from "./state/store";
 
@@ -26,13 +27,10 @@ export default function App() {
     const cy = cyRef.current;
     if (!cy) return;
     const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#ffffff";
-    const blob = cy.png({ full: true, scale: 2, output: "blob", bg }) as unknown as Blob;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${(caseName || "graph").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.png`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const filename = `${(caseName || "graph").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.png`;
+    if (!renderPng(cy, filename, bg)) {
+      useWorkbench.getState().setError("The graph is too large to render as PNG; hide nodes or export Graph JSON instead.");
+    }
   };
 
   return (

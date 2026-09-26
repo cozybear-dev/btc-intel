@@ -1,3 +1,4 @@
+import type { Core } from "cytoscape";
 import type { GraphNode } from "../api/types";
 import { formatBtc } from "../lib/format";
 import { type GraphModel, stats } from "../graph/model";
@@ -71,11 +72,29 @@ export function markdownReport(m: GraphModel, meta: { caseName: string; notes: s
   return lines.join("\n");
 }
 
-export function downloadText(filename: string, text: string, mime = "text/plain"): void {
-  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+// Browsers fail silently (an empty image) above ~32k px per side; keep PNG exports well inside that.
+export const MAX_PNG_SIDE = 8192;
+
+/** Render the whole graph to PNG and download it; false when the browser produced no image. */
+export function exportPng(cy: Pick<Core, "png" | "elements">, filename: string, bg: string): boolean {
+  // cytoscape ignores maxWidth/maxHeight once `scale` is set, so bound the canvas through the scale
+  const bb = cy.elements().boundingBox();
+  const scale = Math.min(2, MAX_PNG_SIDE / Math.max(bb.w, bb.h, 1));
+  const blob = cy.png({ full: true, scale, output: "blob", bg }) as unknown as Blob;
+  if (!blob || blob.size === 0) return false;
+  downloadBlob(filename, blob);
+  return true;
+}
+
+function downloadBlob(filename: string, blob: Blob): void {
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export function downloadText(filename: string, text: string, mime = "text/plain"): void {
+  downloadBlob(filename, new Blob([text], { type: mime }));
 }
