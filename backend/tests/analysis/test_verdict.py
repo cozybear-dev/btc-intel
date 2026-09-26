@@ -77,7 +77,7 @@ def test_nothing_found_and_low_coverage():
     unspent = bucket("Still unspent", "unspent", "none", 0.3, kind="unspent", source=None)
     unresolved = bucket("Fees or not reached (budget)", "remainder", "none", 0.7, kind="remainder", source=None)
     v = verdict(exposure("forward", unspent, unresolved))
-    assert v.level == "none" and v.reasons[0].text == "No known entity found within 3 hops"
+    assert v.level == "none" and v.reasons[0].text == "No known entity found within 3 hops (only 30% of funds traced)"
     assert v.low_confidence
     assert v.coverage == "Traced 30% of funds to an endpoint within 3 hops; 70% not reached"
 
@@ -107,3 +107,23 @@ def test_many_label_reasons_keep_the_worst():
     tags = [tag(A, "Casino", "gambling"), tag(A, "Mixer pool", "coinjoin"), tag(A, "OTC desk", "otc_broker"), tag(A, "Hydra", "darknet_market")]
     v = verdict(info={"tags": tags}, final=False)
     assert v.level == "severe" and v.reasons[0].text.startswith("Labeled Hydra") and len(v.reasons) == 3
+
+
+def test_a_failed_direction_is_low_confidence_and_explained():
+    ok = exposure("backward", bucket("Still unspent", "unspent", "none", 1.0, kind="unspent", source=None))
+    failed = Exposure(direction="forward", total=1_000_000,
+                      buckets=[bucket("Fees or not reached (budget)", "remainder", "none", 1.0, kind="remainder", source=None)],
+                      resolved_share=0.0, incomplete=True, reason="NotFound: abc", error="NotFound: abc")
+    v = verdict(ok, failed)
+    assert v.level == "none" and v.low_confidence
+    assert [r.rule for r in v.reasons] == ["nothing", "trace_failed"]
+    assert v.reasons[0].text == "No known entity found within 3 hops (only 50% of funds traced)"
+    assert v.reasons[1].text == "Destinations could not be traced: NotFound: abc"
+
+
+def test_exposure_counts_even_without_external_income():
+    hydra = bucket("Hydra", "darknet_market", "severe", 0.75, hops=1, total=400_000)
+    unspent = bucket("Still unspent", "unspent", "none", 0.25, kind="unspent", source=None, total=400_000)
+    v = verdict(exposure("forward", hydra, unspent, total=0))
+    assert v.level == "severe" and v.reasons[0].rule == "direct_severe"
+    assert v.coverage.startswith("Traced 100% of funds")

@@ -58,9 +58,17 @@ def label_reasons(address: str, info: dict[str, Any], cluster: ClusterSummary | 
     return reasons[:MAX_LABEL_REASONS]
 
 
+def _base(e: Exposure) -> float:
+    """The value an exposure's shares refer to: the traced total, or what the trace reached when that
+    is more (every receipt in the window was the address's own change, so the total is 0)."""
+    return max(e.total, sum(b.amount for b in e.buckets))
+
+
 def exposure_reasons(e: Exposure) -> list[Reason]:
-    if not e.total:
-        return []
+    failed = [Reason(level="none", rule="trace_failed", text=(
+        f"{'Sources' if e.direction == 'backward' else 'Destinations'} could not be traced: {e.error}"))] if e.error else []
+    if not e.buckets:
+        return failed
     verb, prep, noun, went = _WORDS[e.direction]
     labeled = [b for b in e.buckets if b.kind == "labeled"]
     reasons = [
@@ -85,19 +93,27 @@ def exposure_reasons(e: Exposure) -> list[Reason]:
     if labeled and not risky and not medium:
         reasons.append(Reason(level="low", rule="low_only", text=(
             f"{noun.capitalize()} funds {went} only low-risk known entities: {_names([b.label for b in labeled])}")))
-    return reasons
+    return reasons + failed
 
 
-def coverage_line(exposures: list[Exposure], hops: int) -> tuple[str, bool]:
-    """Human coverage line and whether it is low enough to flag the verdict as low confidence."""
+def coverage_line(exposures: list[Exposure], hops: int) -> tuple[str, float | None]:
+    """Human coverage line and the overall share of value traced to an endpoint (None: nothing to trace)."""
     if not exposures:
-        return "Tracing in progress…", False
-    total = sum(e.total for e in exposures)
+        return "Tracing in progress…", None
+    bases = [_base(e) for e in exposures]
+    total = sum(bases)
     if not total:
-        return "No incoming funds in the analysed history, so there was nothing to trace", False
-    resolved = sum(e.resolved_share * e.total for e in exposures) / total
+        return "No incoming funds in the analysed history, so there was nothing to trace", None
+    resolved = sum(e.resolved_share * base for e, base in zip(exposures, bases, strict=True)) / total
     return (f"Traced {pct(resolved)} of funds to an endpoint within {hops} hops; {pct(1 - resolved)} not reached",
-            resolved < LOW_COVERAGE)
+            resolved)
+
+
+def low_confidence(exposures: list[Exposure], resolved: float | None) -> bool:
+    """Too little traced overall, a direction that failed, or a direction mostly not reached."""
+    return ((resolved is not None and resolved < LOW_COVERAGE)
+            or any(e.error for e in exposures)
+            or any(_base(e) and e.resolved_share < LOW_COVERAGE for e in exposures))
 
 
 def build_verdict(address: str, info: dict[str, Any], cluster: ClusterSummary | None, exposures: list[Exposure],
@@ -105,9 +121,15 @@ def build_verdict(address: str, info: dict[str, Any], cluster: ClusterSummary | 
     reasons = label_reasons(address, info, cluster, taxonomy)
     for e in exposures:
         reasons += exposure_reasons(e)
-    if not reasons:
-        text = f"No known entity found within {hops} hops" if final else "No labels on this address; tracing its funds…"
-        reasons = [Reason(level="none", rule="nothing", text=text)]
+    coverage, resolved = coverage_line(exposures, hops) if final else ("Tracing in progress…", None)
+    low = final and low_confidence(exposures, resolved)
+    if all(r.rule == "trace_failed" for r in reasons):
+        if not final:
+            text = "No labels on this address; tracing its funds…"
+        elif low and resolved is not None:
+            text = f"No known entity found within {hops} hops (only {pct(resolved)} of funds traced)"
+        else:
+            text = f"No known entity found within {hops} hops"
+        reasons.insert(0, Reason(level="none", rule="nothing", text=text))
     reasons.sort(key=lambda r: -RISK_ORDER[r.level])
-    coverage, low = coverage_line(exposures, hops) if final else ("Tracing in progress…", False)
     return Verdict(level=reasons[0].level, final=final, low_confidence=low, coverage=coverage, reasons=reasons)
