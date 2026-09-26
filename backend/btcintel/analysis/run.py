@@ -19,19 +19,21 @@ from btcintel.analysis.models import (
 from btcintel.analysis.profile import build_profile
 from btcintel.analysis.report import to_markdown
 from btcintel.analysis.verdict import build_verdict
+from btcintel.catalog.schema import RISK_ORDER
 from btcintel.chain.budget import CallBudget, budget_scope
 from btcintel.chain.errors import ChainError
 from btcintel.chain.source import ChainSource
 from btcintel.chain.validate import normalize_address
 from btcintel.cluster.expand import ExpandPolicy, ExpandResult, cluster_tags, expand_cluster
 from btcintel.cluster.unionfind import UnionFind
-from btcintel.labels.lookup import LabelLookup
+from btcintel.labels.lookup import AddressInfo, LabelLookup
 from btcintel.labels.store import TagStore
 from btcintel.labels.taxonomy import Taxonomy
 from btcintel.trace.engine import TracePolicy, TraceResult, TraceSeed, trace
 from btcintel.trace.graph import Emit
 
 TOP_CLUSTER_LABELS = 5
+PROFILE_TAGS = 10
 
 
 def _ignore(event: dict[str, Any]) -> None:
@@ -44,10 +46,24 @@ def analysis_stop_categories(taxonomy: Taxonomy) -> list[str]:
     return sorted(set(taxonomy.categories) - {"unknown"})
 
 
-def summarize_cluster(result: ExpandResult, uf: UnionFind, tags: TagStore) -> ClusterSummary:
+def label_views(info: AddressInfo, taxonomy: Taxonomy) -> tuple[dict[str, Any], dict[str, Any]]:
+    """The address's label info for the profile (top PROFILE_TAGS tags) and for the verdict (every
+    tag), with tags riskiest first. AddressInfo.to_dict() keeps the first 10 in confidence order,
+    which would hide a low-confidence severe tag behind well-attested low-risk ones."""
+    ranked = sorted(info.tags, key=lambda t: -RISK_ORDER[taxonomy.risk_of_tag(t)])  # stable: confidence order kept
+    full = {**info.to_dict(), "tags": [t.model_dump() for t in ranked]}
+    return {**full, "tags": full["tags"][:PROFILE_TAGS]}, full
+
+
+def summarize_cluster(result: ExpandResult, uf: UnionFind, tags: TagStore, taxonomy: Taxonomy) -> ClusterSummary:
     counts = Counter((t.label, t.category, t.abuse) for t in cluster_tags(result.root, uf, tags))
+
+    def risk(key: tuple[str, str, str | None]) -> int:
+        return max(RISK_ORDER[taxonomy.risk(key[1])], RISK_ORDER[taxonomy.risk(key[2])])
+
+    ranked = sorted(counts.items(), key=lambda kv: (-risk(kv[0]), -kv[1]))  # riskiest, then most common
     top = [{"label": label, "category": category, "abuse": abuse, "count": n}
-           for (label, category, abuse), n in counts.most_common(TOP_CLUSTER_LABELS)]
+           for (label, category, abuse), n in ranked[:TOP_CLUSTER_LABELS]]
     return ClusterSummary(root=result.root, size=result.size, partial=result.partial, capped=result.capped,
                           conflicts=result.conflicts, top_labels=top, calls_used=result.calls_used)
 
@@ -71,9 +87,10 @@ async def analyze_address(address: str, policy: AnalysisPolicy, *, chain: ChainS
         async with aclosing(chain.iter_address_txs(address, policy.history_txs)) as txs:
             history = [tx async for tx in txs]
     calls = budget.used
-    profile = build_profile(address, stats, history, LabelLookup(tags, taxonomy, uf).lookup(address).to_dict())
+    shown, all_labels = label_views(LabelLookup(tags, taxonomy, uf).lookup(address), taxonomy)
+    profile = build_profile(address, stats, history, shown)
     section("profile", profile)
-    section("verdict", build_verdict(address, profile.info, None, [], taxonomy=taxonomy,
+    section("verdict", build_verdict(address, all_labels, None, [], taxonomy=taxonomy,
                                      hops=policy.trace_hops, final=False))
     progress("profile")
 
@@ -91,7 +108,7 @@ async def analyze_address(address: str, policy: AnalysisPolicy, *, chain: ChainS
             result = await expand_cluster(address, chain, uf, tags, ExpandPolicy(
                 max_addresses=policy.cluster_addresses, max_calls=policy.cluster_calls,
                 max_txs_per_address=policy.history_txs))
-            summary = summarize_cluster(result, uf, tags)
+            summary = summarize_cluster(result, uf, tags, taxonomy)
         except ChainError as e:
             summary = ClusterSummary(root=address, size=1, partial=True, capped=False,
                                      error=f"{type(e).__name__}: {e}")
@@ -138,9 +155,10 @@ async def analyze_address(address: str, policy: AnalysisPolicy, *, chain: ChainS
     section("destinations", destinations)
 
     # 4. Final verdict, with labels re-read now that the cluster may have grown.
-    profile = profile.model_copy(update={"info": LabelLookup(tags, taxonomy, uf).lookup(address).to_dict()})
+    shown, all_labels = label_views(LabelLookup(tags, taxonomy, uf).lookup(address), taxonomy)
+    profile = profile.model_copy(update={"info": shown})
     section("profile", profile)
-    verdict = build_verdict(address, profile.info, cluster, [sources, destinations], taxonomy=taxonomy,
+    verdict = build_verdict(address, all_labels, cluster, [sources, destinations], taxonomy=taxonomy,
                             hops=policy.trace_hops, final=True)
     section("verdict", verdict)
     report = AnalysisReport(address=address, depth=policy.depth, generated_at=time.time(), profile=profile,

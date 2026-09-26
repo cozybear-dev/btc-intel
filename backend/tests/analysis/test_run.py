@@ -1,8 +1,10 @@
 import pytest
 
 from btcintel.analysis.models import AnalysisPolicy
+from btcintel.analysis.run import summarize_cluster
+from btcintel.cluster.expand import ExpandResult
 from btcintel.labels.store import Tag
-from tests.analysis_scenario import A, R, build_funded, run_analysis
+from tests.analysis_scenario import TAX, A, R, build_funded, run_analysis, stores
 from tests.builders import ADDR, mk_tx
 from tests.fakes import FakeChain
 
@@ -69,3 +71,29 @@ async def test_busy_address_is_still_traced_past_its_own_history():
     dst = {b.label: b for b in report.destinations.buckets}
     assert dst["Hydra"].min_hops == 1 and dst["Hydra"].share > 0.99
     assert report.verdict.level == "severe"
+
+
+async def test_a_severe_tag_beyond_the_first_ten_still_counts():
+    services = [Tag(address=A, label=f"Service {i:02d}", category="exchange", confidence="service_data",
+                    source="t", pack="t") for i in range(12)]
+    theft = Tag(address=A, label="Zeta theft", category="unknown", abuse="theft", confidence="web_crawl",
+                source="t", pack="t")
+    report, _ = await run_analysis(FakeChain(build_funded().txs), tagged=False, extra_tags=[*services, theft])
+    assert report.verdict.level == "severe"
+    assert report.verdict.reasons[0].text == "Labeled Zeta theft (theft, t)"
+    assert report.profile.info["tags"][0]["label"] == "Zeta theft" and len(report.profile.info["tags"]) == 10
+
+
+def test_cluster_top_labels_put_the_riskiest_first():
+    members = ADDR[10:14]
+    common = [Tag(address=a, label="Big Exchange", category="exchange", confidence="service_data", source="t",
+                  pack="t") for a in members[:3]]
+    helix = Tag(address=members[3], label="Helix", category="mixing_service", confidence="web_crawl", source="t",
+                pack="t")
+    tags, uf = stores(tagged=False, extra_tags=[*common, helix])
+    for a in members[1:]:
+        root = uf.union(members[0], a)
+    result = ExpandResult(root=root, size=len(members), partial=False, capped=False, calls_used=0, new_links=0,
+                          conflicts=[])
+    top = summarize_cluster(result, uf, tags, TAX).top_labels
+    assert [(t["label"], t["count"]) for t in top] == [("Helix", 1), ("Big Exchange", 3)]
