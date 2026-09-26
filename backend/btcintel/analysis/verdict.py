@@ -39,11 +39,13 @@ def label_reasons(address: str, info: dict[str, Any], cluster: ClusterSummary | 
     seen: set[str] = set()
     for tag in info.get("tags", []):
         level = _tag_risk(taxonomy, tag)
-        if RISK_ORDER[level] < RISK_ORDER["medium"] or tag["label"] in seen:
+        own = tag.get("address") == address
+        # the address's own labels always say who it is; inherited ones only count when risky
+        if (not own and RISK_ORDER[level] < RISK_ORDER["medium"]) or tag["label"] in seen:
             continue
         seen.add(tag["label"])
         what = f"{tag['label']} ({tag.get('abuse') or tag.get('category')}, {tag.get('pack') or tag.get('source')})"
-        if tag.get("address") == address:
+        if own:
             reasons.append(Reason(level=level, rule="own_label", text=f"Labeled {what}"))
             continue
         where = f"Its co-spend cluster ({cluster.size} addresses)" if cluster else "Its co-spend cluster"

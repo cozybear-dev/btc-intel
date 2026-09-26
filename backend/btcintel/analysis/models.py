@@ -29,7 +29,7 @@ class AnalysisPolicy(BaseModel):
 
     @classmethod
     def quick(cls) -> AnalysisPolicy:
-        """About 300 API calls: 1-1.5 min on the public Esplora APIs."""
+        """At most about 300 API calls: usually under a minute on the public Esplora APIs."""
         return cls(
             depth="quick",
             history_txs=100,

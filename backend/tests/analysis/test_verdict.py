@@ -93,6 +93,16 @@ def test_no_incoming_funds():
     assert v.level == "none" and not v.low_confidence and v.coverage.startswith("No incoming funds")
 
 
+def test_own_low_risk_label_explains_who_it_is():
+    v = verdict(info={"tags": [tag(A, "Binance reserve", "exchange", pack="gs:exchange-wallets-binance")]})
+    assert v.level == "low"
+    assert v.reasons == [Reason(level="low", rule="own_label", text="Labeled Binance reserve (exchange, gs:exchange-wallets-binance)")]
+    pool = verdict(info={"tags": [tag(A, "Foundry USA", "mining_pool")]})
+    assert pool.level == "none" and pool.reasons[0].rule == "own_label"
+    inherited = verdict(info={"tags": [tag(ADDR[5], "Binance", "exchange")]})
+    assert inherited.reasons[0].rule == "nothing"
+
+
 def test_many_label_reasons_keep_the_worst():
     tags = [tag(A, "Casino", "gambling"), tag(A, "Mixer pool", "coinjoin"), tag(A, "OTC desk", "otc_broker"), tag(A, "Hydra", "darknet_market")]
     v = verdict(info={"tags": tags}, final=False)

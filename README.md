@@ -24,7 +24,7 @@ Development with hot reload: run `uv run btcintel serve` and, in another shell, 
 
 - Enter an address to get an **automatic analysis**: a risk verdict with the reasons behind it, where the
   funds came from and went to (exchanges, mixers, sanctioned or ransomware addresses, unspent), the
-  co-spend cluster and the wallet fingerprint. It fills in live in about 1–1.5 minutes on public APIs;
+  co-spend cluster and the wallet fingerprint. It fills in live, usually within a minute on public APIs;
   **Go deeper** reruns it with larger budgets (5–10 min) and **Open in graph** shows the traced paths.
   The same report on the command line: `uv run btcintel analyze <address> [--deep] [--json]`.
 - Search a txid or `txid:vout` to open it in the graph, or a tag name to find labeled addresses.
