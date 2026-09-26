@@ -237,7 +237,32 @@ async def _cluster(args: argparse.Namespace) -> int:
     return 0
 
 
-COMMANDS.update({"serve": _cmd_serve, "tx": _cmd_tx, "trace": _cmd_trace, "cluster": _cmd_cluster})
+def _cmd_analyze(args: argparse.Namespace) -> int:
+    if not is_address(args.address):
+        print("invalid address", file=sys.stderr)
+        return 2
+    return asyncio.run(_analyze(args))
+
+
+async def _analyze(args: argparse.Namespace) -> int:
+    from btcintel.analysis.models import AnalysisPolicy
+    from btcintel.analysis.run import analyze_address
+    from btcintel.runtime import open_runtime
+
+    policy = AnalysisPolicy.deep() if args.deep else AnalysisPolicy.quick()
+    async with open_runtime(load_settings()) as rt:
+        try:
+            report = await analyze_address(args.address, policy, chain=rt.chain, tags=rt.tags, uf=rt.uf,
+                                           taxonomy=rt.taxonomy)
+        except ChainError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
+    sys.stdout.write(report.model_dump_json(indent=2) + "\n" if args.json else report.markdown)
+    return 0
+
+
+COMMANDS.update({"serve": _cmd_serve, "tx": _cmd_tx, "trace": _cmd_trace, "cluster": _cmd_cluster,
+                 "analyze": _cmd_analyze})
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -273,6 +298,10 @@ def _build_parser() -> argparse.ArgumentParser:
     cl.add_argument("address")
     cl.add_argument("--max-addresses", type=int, default=2000)
     cl.add_argument("--max-calls", type=int, default=400)
+    an = sub.add_parser("analyze", help="automatic analysis of an address: risk, sources, destinations, profile")
+    an.add_argument("address")
+    an.add_argument("--deep", action="store_true", help="larger budgets (5-10 min on public APIs)")
+    an.add_argument("--json", action="store_true", help="print the full report as JSON")
     return parser
 
 

@@ -12,6 +12,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from btcintel import __version__
 from btcintel.api import (
+    routes_analysis,
     routes_cases,
     routes_chain,
     routes_cluster,
@@ -50,7 +51,7 @@ def create_app(settings: Settings | None = None, *, chain: ChainSource | None = 
 
     app = FastAPI(title="btc-intel", version=__version__, lifespan=lifespan)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts(settings.host))
-    for module in (routes_chain, routes_trace, routes_cluster, routes_tags, routes_cases, routes_kb):
+    for module in (routes_chain, routes_trace, routes_analysis, routes_cluster, routes_tags, routes_cases, routes_kb):
         app.include_router(module.router)
 
     @app.exception_handler(NotFound)
