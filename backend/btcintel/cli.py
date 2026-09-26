@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
+import json
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -13,6 +15,8 @@ from btcintel import __version__
 from btcintel.catalog.loader import CatalogError, check_catalog, load_catalog
 from btcintel.catalog.online import check_urls, verify_seeds
 from btcintel.catalog.render import write_all
+from btcintel.chain.errors import ChainError
+from btcintel.chain.validate import classify_query, is_address, is_txid
 from btcintel.config import load_settings
 from btcintel.db import open_intel_db
 from btcintel.labels import importers
@@ -137,6 +141,103 @@ COMMANDS.update({"import-tags": _cmd_import_tags, "tags": _cmd_tags})
 COMMANDS["catalog"] = _cmd_catalog
 
 
+def _cmd_serve(args: argparse.Namespace) -> int:
+    import uvicorn
+
+    from btcintel.api.app import create_app
+
+    settings = load_settings()
+    host = args.host or settings.host
+    port = args.port or settings.port
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        print("WARNING: binding to a non-loopback address exposes an unauthenticated API", file=sys.stderr)
+    uvicorn.run(create_app(settings), host=host, port=port, log_level="info")
+    return 0
+
+
+def _cmd_tx(args: argparse.Namespace) -> int:
+    if not is_txid(args.txid):
+        print("invalid txid", file=sys.stderr)
+        return 2
+    return asyncio.run(_tx(args.txid.lower()))
+
+
+async def _tx(txid: str) -> int:
+    from btcintel.heuristics.base import analyze_tx
+    from btcintel.heuristics.flags import tx_flags
+    from btcintel.runtime import open_runtime
+
+    async with open_runtime(load_settings()) as rt:
+        try:
+            tx = await rt.chain.get_tx(txid)
+            findings = await analyze_tx(tx, rt.context())
+        except ChainError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
+        print(json.dumps({"txid": tx.txid, "flags": tx_flags(tx),
+                          "findings": [f.model_dump() for f in findings]}, indent=2))
+    return 0
+
+
+def _cmd_trace(args: argparse.Namespace) -> int:
+    kind, value = classify_query(args.seed)
+    if kind not in ("txid", "outpoint", "address"):
+        print("seed must be a txid, txid:vout or address", file=sys.stderr)
+        return 2
+    return asyncio.run(_trace(kind, value, args))
+
+
+async def _trace(kind: str, value: str, args: argparse.Namespace) -> int:
+    from btcintel.runtime import open_runtime
+    from btcintel.trace.engine import TracePolicy, TraceSeed, trace
+
+    if kind == "outpoint":
+        txid, vout = value.split(":")
+        seed = TraceSeed(txid=txid, vout=int(vout))
+    elif kind == "txid":
+        seed = TraceSeed(txid=value)
+    else:
+        seed = TraceSeed(address=value)
+    policy = TracePolicy(direction="backward" if args.backward else "forward", max_hops=args.hops,
+                         taint_model=args.model, peel_mode=args.peel, max_calls=args.max_calls,
+                         coinjoin="through" if args.through_coinjoin else "stop")
+    async with open_runtime(load_settings()) as rt:
+        try:
+            result = await trace(seed, policy, chain=rt.chain, labels=rt.labels())
+        except ChainError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
+    order = {"labeled": 0, "coinjoin": 1, "unspent": 2}
+    stops = sorted(result.stops, key=lambda st: (order.get(st.reason, 9), -st.taint))
+    print(json.dumps({
+        "txs": result.txs_expanded, "addresses": sum(n.kind == "address" for n in result.nodes),
+        "incomplete": result.incomplete, "reason": result.reason, "calls_used": result.calls_used,
+        "stops": [st.model_dump() for st in stops[:50]],
+    }, indent=2))
+    return 0
+
+
+def _cmd_cluster(args: argparse.Namespace) -> int:
+    if not is_address(args.address):
+        print("invalid address", file=sys.stderr)
+        return 2
+    return asyncio.run(_cluster(args))
+
+
+async def _cluster(args: argparse.Namespace) -> int:
+    from btcintel.cluster.expand import ExpandPolicy, expand_cluster
+    from btcintel.runtime import open_runtime
+
+    async with open_runtime(load_settings()) as rt:
+        result = await expand_cluster(args.address, rt.chain, rt.uf, rt.tags,
+                                      ExpandPolicy(max_addresses=args.max_addresses, max_calls=args.max_calls))
+    print(json.dumps(result.model_dump(), indent=2))
+    return 0
+
+
+COMMANDS.update({"serve": _cmd_serve, "tx": _cmd_tx, "trace": _cmd_trace, "cluster": _cmd_cluster})
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="btcintel", description="Bitcoin intelligence toolkit")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -153,6 +254,23 @@ def _build_parser() -> argparse.ArgumentParser:
     imp.add_argument("--pack", help="pack name for a TagPack file")
     tg = sub.add_parser("tags", help="show tags for an address")
     tg.add_argument("address")
+    sv = sub.add_parser("serve", help="run the local API (and web UI if built)")
+    sv.add_argument("--host")
+    sv.add_argument("--port", type=int)
+    txp = sub.add_parser("tx", help="analyze one transaction")
+    txp.add_argument("txid")
+    tr = sub.add_parser("trace", help="trace funds from a txid, txid:vout or address")
+    tr.add_argument("seed")
+    tr.add_argument("--backward", action="store_true")
+    tr.add_argument("--hops", type=int, default=6)
+    tr.add_argument("--model", choices=["haircut", "fifo", "poison"], default="haircut")
+    tr.add_argument("--peel", action="store_true", help="follow only the remainder (peel chains)")
+    tr.add_argument("--max-calls", type=int, default=600)
+    tr.add_argument("--through-coinjoin", action="store_true")
+    cl = sub.add_parser("cluster", help="expand the CIOH cluster of an address")
+    cl.add_argument("address")
+    cl.add_argument("--max-addresses", type=int, default=2000)
+    cl.add_argument("--max-calls", type=int, default=400)
     return parser
 
 
