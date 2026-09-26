@@ -32,12 +32,16 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-function VerdictPanel({ verdict }: { verdict: Verdict }) {
+function VerdictPanel({ verdict, running }: { verdict: Verdict; running: boolean }) {
   return (
     <section aria-label="Verdict" className="panel p-4 space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <RiskBadge level={verdict.level} />
-        {!verdict.final && <span className="muted text-sm">preliminary: tracing still running</span>}
+        {!verdict.final && (
+          <span className="muted text-sm">
+            {running ? "preliminary: tracing still running" : "incomplete: analysis stopped before finishing"}
+          </span>
+        )}
         {verdict.low_confidence && <span className="text-sm" style={{ color: "var(--risk-medium)" }}>low confidence: try Go deeper</span>}
       </div>
       <h2 className="font-semibold">Why</h2>
@@ -167,7 +171,7 @@ export default function AnalysisView({ address }: { address: string }) {
             <button className="btn" disabled={!analysis.markdown} onClick={() => void saveAnalysisAsCase()}>Save as case</button>
           </div>
         </header>
-        {sections.verdict ? <VerdictPanel verdict={sections.verdict} /> : <Pending what="Checking labels" active={pending} />}
+        {sections.verdict ? <VerdictPanel verdict={sections.verdict} running={running} /> : <Pending what="Checking labels" active={pending} />}
         <div className="grid gap-4 md:grid-cols-2">
           {sections.profile ? <ProfilePanel p={sections.profile} /> : <Pending what="Loading profile" active={pending} />}
           {sections.cluster ? <ClusterPanel c={sections.cluster} /> : <Pending what="Expanding cluster" active={pending} />}

@@ -58,3 +58,12 @@ test("Open in graph uses the normalised address from the profile", async () => {
   await userEvent.click(screen.getByRole("button", { name: "Open in graph" }));
   expect(useWorkbench.getState().selected).toBe(`addr:${ANALYSED}`);
 });
+
+test("a preliminary verdict left by a cancelled analysis reads incomplete, not still running", () => {
+  const sections = { ...analysisSections, verdict: { ...analysisSections.verdict!, final: false } };
+  useWorkbench.getState().setAnalysis({ address: ANALYSED, depth: "quick", sections, markdown: null });
+  useWorkbench.getState().setJob({ id: "a1", kind: "analysis", status: "cancelled", nodes: 5, stops: 3, error: null, reason: null, calls: 42 });
+  render(<AnalysisView address={ANALYSED} />);
+  expect(screen.getByText("incomplete: analysis stopped before finishing")).toBeInTheDocument();
+  expect(screen.queryByText("preliminary: tracing still running")).not.toBeInTheDocument();
+});
