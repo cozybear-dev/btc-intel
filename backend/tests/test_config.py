@@ -42,3 +42,13 @@ def test_load_settings_defaults_point_into_repo():
     s = load_settings({})
     assert s.catalog_dir.name == "catalog" and s.kb_dir.parts[-2:] == ("docs", "kb")
     assert s.proxy is None
+
+
+def test_allowed_hosts_from_env():
+    assert load_settings({}).allowed_hosts == ()
+    s = load_settings({"BTCINTEL_ALLOWED_HOSTS": " 127.0.0.1 , localhost ,"})
+    assert s.allowed_hosts == ("127.0.0.1", "localhost")
+
+
+def test_empty_backends_env_falls_back_to_defaults():
+    assert load_settings({"BTCINTEL_BACKENDS": ""}).backends == parse_backends(DEFAULT_BACKENDS)

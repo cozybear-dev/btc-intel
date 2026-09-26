@@ -32,6 +32,7 @@ class Settings:
     proxy: str | None = None
     host: str = "127.0.0.1"
     port: int = 8765
+    allowed_hosts: tuple[str, ...] = ()  # Host headers the API answers; empty = derive from host
 
     @property
     def cache_path(self) -> Path:
@@ -76,8 +77,9 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         data_dir=Path(env.get("BTCINTEL_DATA_DIR", str(REPO_ROOT / "data"))),
         catalog_dir=Path(env.get("BTCINTEL_CATALOG_DIR", str(REPO_ROOT / "catalog"))),
         kb_dir=Path(env.get("BTCINTEL_KB_DIR", str(REPO_ROOT / "docs" / "kb"))),
-        backends=parse_backends(env.get("BTCINTEL_BACKENDS", DEFAULT_BACKENDS)),
+        backends=parse_backends(env.get("BTCINTEL_BACKENDS") or DEFAULT_BACKENDS),
         proxy=env.get("BTCINTEL_PROXY") or None,
         host=env.get("BTCINTEL_HOST", "127.0.0.1"),
         port=int(env.get("BTCINTEL_PORT", "8765")),
+        allowed_hosts=tuple(h for h in (p.strip() for p in env.get("BTCINTEL_ALLOWED_HOSTS", "").split(",")) if h),
     )

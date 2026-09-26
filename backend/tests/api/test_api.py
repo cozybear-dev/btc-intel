@@ -122,6 +122,14 @@ def test_foreign_host_header_is_rejected(client):
         assert client.get("/api/health", headers={"host": host}).status_code == 200
 
 
+def test_explicit_allowed_hosts_keep_the_check_on_a_wildcard_bind(make_client):
+    """In a container the server binds 0.0.0.0; BTCINTEL_ALLOWED_HOSTS keeps DNS-rebinding protection."""
+    client = make_client(env={"BTCINTEL_HOST": "0.0.0.0", "BTCINTEL_ALLOWED_HOSTS": "127.0.0.1,localhost"})
+    assert client.get("/api/health", headers={"host": "evil.example"}).status_code == 400
+    for host in ("127.0.0.1:8765", "localhost:8765"):
+        assert client.get("/api/health", headers={"host": host}).status_code == 200
+
+
 def test_allowed_hosts_follow_the_bind_address():
     from btcintel.api.app import allowed_hosts
 
