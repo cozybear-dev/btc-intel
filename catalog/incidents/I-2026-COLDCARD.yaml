@@ -1,0 +1,20 @@
+id: I-2026-COLDCARD
+name: Coldcard Mk3 weak-seed sweeps
+date: '2026-07-30'
+loss: ~1,082 BTC in the first wave (CoinDesk); ~1,816 BTC across four waves (TRM)
+btc: 1816.0
+vector:
+- O-WEAK-KEY-SWEEP
+actor: null
+attribution: unknown
+techniques: []
+summary: 'A Coldcard firmware build from March 2021 fell back to a weak software random-number generator,
+  leaving some Mk3 seeds with as little as ~40 bits of entropy. From 30 July 2026 an attacker who never
+  touched the devices swept single-signature wallets: CoinDesk reports ~1,082 BTC from ~1,196 addresses
+  in 41 minutes in the first wave, and TRM counts ~1,816 BTC across four waves and more than 5,200 addresses.'
+seeds_note: The cited reports do not list sweep or consolidation addresses in their text; investigator
+  address lists or the consolidation transactions could supply seeds.
+refs:
+- coindesk-coldcard-2026
+- trm-coldcard-2026
+kb: incidents/i-2026-coldcard.md

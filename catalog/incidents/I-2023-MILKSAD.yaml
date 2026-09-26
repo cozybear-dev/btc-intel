@@ -1,0 +1,19 @@
+id: I-2023-MILKSAD
+name: Milk Sad (Libbitcoin Explorer bx seed) weak-entropy thefts
+date: '2023-07-12'
+loss: Estimated ~$900k across multiple chains
+btc: null
+vector:
+- O-WEAK-KEY-SWEEP
+actor: null
+attribution: unknown
+techniques: []
+summary: Libbitcoin Explorer 3.x's `bx seed` generated wallet entropy from a Mersenne Twister seeded with
+  32 bits of system time, so affected keys could be brute-forced. Researchers confirmed use of the weak
+  function in over 2,600 Bitcoin mainnet wallets; the main theft occurred around 12 July 2023, with smaller
+  exploitation likely from May 2023 (CVE-2023-39910).
+seeds_note: The public write-up describes the affected wallet population without listing specific theft
+  addresses; the researchers' datasets could supply them.
+refs:
+- milksad-2023
+kb: incidents/i-2023-milksad.md

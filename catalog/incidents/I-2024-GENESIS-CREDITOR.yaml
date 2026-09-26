@@ -1,0 +1,30 @@
+id: I-2024-GENESIS-CREDITOR
+name: $243M social-engineering theft from a Genesis creditor
+date: '2024-08-19'
+loss: 4,064 BTC (~$243M)
+btc: 4064.0
+vector:
+- O-SOCIAL-ENGINEERING
+actor: Three alleged perpetrators identified by ZachXBT (two later arrested)
+attribution: suspected
+techniques:
+- O-INSTANT-SWAP
+- O-PRIVACY-COIN
+summary: On 19 August 2024 attackers posing as Google and Gemini support social-engineered a Genesis creditor,
+  reset their two-factor authentication, used remote-access software to obtain private keys and drained
+  4,064 BTC, then routed it through more than 15 exchanges and swap services.
+seeds:
+- kind: tx
+  value: e747b963a463334c164b0a8fff844f73693272bb2b331adbe2147d70ec196360
+  role: theft
+  ref: zachxbt-genesis-2024
+  note: 59.34 BTC theft transaction, 19 Aug 2024 01:48 UTC
+- kind: tx
+  value: 7c7ebed785f0b4d4335d559b14b8215862fbe29db329e3ee0f2a7e64a16ce9e3
+  role: theft
+  ref: zachxbt-genesis-2024
+  note: 14.88 BTC theft transaction, 19 Aug 2024 02:30 UTC
+refs:
+- theblock-genesis-2024
+- zachxbt-genesis-2024
+kb: incidents/i-2024-genesis-creditor.md

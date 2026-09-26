@@ -1,0 +1,18 @@
+id: I-2026-BITGET
+name: Bitget hot-wallet breach
+date: '2026-09-24'
+loss: ~$351.6M across hot wallets
+btc: null
+vector:
+- O-KEY-COMPROMISE
+actor: Suspected North Korea / Lazarus (unconfirmed)
+attribution: suspected
+techniques: []
+summary: At 18:31 UTC on 24 September 2026 Bitget detected unauthorised transfers from several hot wallets
+  totalling about $351.6M. Withdrawals were suspended; an on-chain investigator attributed it to Lazarus,
+  but as of 25 September 2026 that remained a hypothesis without published indicators.
+seeds_note: Attribution and on-chain details (including which assets and any Bitcoin addresses) were still
+  pending as of 2026-09-25; seeds should be added from Bitget's or investigators' published address lists.
+refs:
+- hackread-bitget-2026
+kb: incidents/i-2026-bitget.md

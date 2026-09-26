@@ -1,0 +1,33 @@
+id: I-2020-LUBIAN
+name: LuBian mining-pool weak-key theft
+date: '2020-12-28'
+loss: 127,426 BTC (per Arkham); ~127,271 BTC later forfeited by the U.S.
+btc: 127426.0
+vector:
+- O-WEAK-KEY-SWEEP
+actor: null
+attribution: unknown
+techniques:
+- O-DORMANCY
+summary: On 28 December 2020 more than 90% of the LuBian mining pool's bitcoin (127,426 BTC) was drained,
+  which Arkham attributes to weak private-key generation; the theft went unreported for nearly five years.
+  LuBian sent 1,516 OP_RETURN messages to the recipient addresses asking for the funds back. In October
+  2025 the U.S. filed its largest-ever forfeiture action (~127,271 BTC) against wallets it tied to Chen
+  Zhi and the Prince Group; Elliptic's analysis links those coins to the LuBian wallets, while China disputes
+  the U.S. account.
+seeds:
+- kind: tx
+  value: a79b1c8df16030691b0ec16db578579a697e1924ec1ba87b0468cdad5a335286
+  role: other
+  ref: arkham-lubian-2025
+  note: OP_RETURN recovery message from LuBian to a recipient address of the stolen funds
+- kind: tx
+  value: 2a829c04731474e31af2f28e1aac876642397d847d69134b9156a6080f792dad
+  role: other
+  ref: arkham-lubian-2025
+  note: Second OP_RETURN recovery message cited by Arkham
+refs:
+- arkham-lubian-2025
+- trm-prince-2025
+- elliptic-prince-lubian-2025
+kb: incidents/i-2020-lubian.md

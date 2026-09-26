@@ -1,0 +1,34 @@
+id: I-2016-BITFINEX
+name: Bitfinex hack and laundering (Lichtenstein & Morgan)
+date: '2016-08-02'
+loss: 119,754 BTC stolen; more than 94,000 BTC recovered in 2022
+btc: 119754.0
+vector:
+- O-KEY-COMPROMISE
+actor: Ilya Lichtenstein (hacker), assisted in laundering by Heather Morgan
+attribution: confirmed
+techniques:
+- O-PEEL-CHAIN
+- O-DISPERSAL
+- O-DARKNET-AS-MIXER
+- O-CHAIN-HOP
+- O-FAKE-KYC
+- O-DORMANCY
+summary: Lichtenstein breached Bitfinex in 2016 and fraudulently authorised more than 2,000 transactions
+  moving 119,754 BTC to a wallet he controlled. The couple laundered part of the proceeds through fictitious-identity
+  accounts, automated transactions, darknet markets (notably AlphaBay) and exchanges, chain hopping, mixers
+  and gold. In 2022 agents decrypted files containing the wallet's private keys and seized more than 94,000
+  BTC; both pleaded guilty in 2023.
+seeds:
+- kind: address
+  value: bc1qazcm763858nkj2dj986etajv6wquslv8uxwczt
+  role: seizure
+  ref: merkle-bitfinex-2022
+  note: Consolidation address that received the ~94,643 BTC recovered by the U.S. government (February
+    2022)
+refs:
+- doj-bitfinex-2022
+- doj-bitfinex-2024
+- chainalysis-bitfinex-2023
+- merkle-bitfinex-2022
+kb: incidents/i-2016-bitfinex.md

@@ -1,0 +1,29 @@
+id: I-2021-COLONIAL
+name: Colonial Pipeline ransomware payment (DarkSide)
+date: '2021-05-08'
+loss: ~75 BTC ransom; 63.7 BTC seized by the FBI
+btc: 75.0
+vector:
+- O-RANSOM
+actor: DarkSide ransomware-as-a-service affiliate
+attribution: confirmed
+techniques:
+- O-PEEL-CHAIN
+summary: Colonial Pipeline paid about 75 BTC to DarkSide on 8 May 2021. The affiliate's 85% share (~63.75
+  BTC) reached an address whose private key the FBI obtained; about 63.7 BTC was seized on 7 June 2021.
+  A further 5.9 BTC moved out of the same address shortly afterwards.
+seeds:
+- kind: address
+  value: bc1qq2euq8pw950klpjcawuy4uj39ym43hs6cfsegq
+  role: seizure
+  ref: elliptic-darkside-2021
+  note: Address holding the affiliate's share, named in the seizure affidavit
+- kind: tx
+  value: 280c5f96397b9502b99703842712b78fda84f1a0faabf826f683448082f46369
+  role: laundering
+  ref: elliptic-darkside-2021
+  note: Additional 5.9 BTC moved from the affiliate address, not mentioned in the affidavit
+refs:
+- doj-colonial-2021
+- elliptic-darkside-2021
+kb: incidents/i-2021-colonial.md

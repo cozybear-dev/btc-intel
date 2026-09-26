@@ -1,0 +1,22 @@
+id: I-2011-MTGOX
+name: Mt. Gox hack
+date: 2011-09
+loss: At least ~647,000 BTC stolen from Mt. Gox's wallets (Sep 2011 – May 2014, per DOJ)
+btc: 647000.0
+vector:
+- O-KEY-COMPROMISE
+actor: Alexey Bilyuchenko, Aleksandr Verner and co-conspirators (charged, not convicted)
+attribution: suspected
+techniques:
+- O-DORMANCY
+- O-HIGH-RISK-EXCHANGE
+summary: Attackers with unauthorised access to Mt. Gox's server transferred bitcoin from its wallets to
+  addresses they controlled from September 2011 through at least May 2014, taking the vast majority of
+  customers' bitcoin. Part of the proceeds was laundered through the BTC-e exchange, whose operator pleaded
+  guilty to money-laundering conspiracy.
+seeds_note: The DOJ releases do not list Bitcoin addresses; the charging documents or the Mt. Gox trustee's
+  reports could supply them.
+refs:
+- doj-mtgox-2023
+- doj-btce-2024
+kb: incidents/i-2011-mtgox.md

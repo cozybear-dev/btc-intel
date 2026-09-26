@@ -1,0 +1,20 @@
+id: I-2026-LIQUID
+name: Liquid Network federation peg exploit
+date: '2026-09-06'
+loss: ~4,000 BTC withdrawn (~$320M); ~3,400 BTC returned
+btc: 4000.0
+vector:
+- O-PROTOCOL-EXPLOIT
+actor: Self-described white-hat hackers
+attribution: unknown
+techniques:
+- O-SIDECHAIN
+summary: On 6 September 2026 attackers minted L-BTC without depositing BTC by exploiting a bug in Elements,
+  exchanged it through SideSwap and withdrew about 4,000 BTC from the Liquid federation wallet. They described
+  themselves as white hats, returned about 3,400 BTC and kept about 598.5 BTC.
+seeds_note: The cited reports do not list the peg-out transactions; Blockstream's incident report or the
+  federation's peg-out records could supply them.
+refs:
+- coindesk-liquid-2026
+- chainalysis-liquid-2026
+kb: incidents/i-2026-liquid.md

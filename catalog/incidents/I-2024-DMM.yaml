@@ -1,0 +1,39 @@
+id: I-2024-DMM
+name: DMM Bitcoin hack
+date: '2024-05-31'
+loss: 4,502.9 BTC (~$305M)
+btc: 4502.9
+vector:
+- O-KEY-COMPROMISE
+actor: North Korea's TraderTraitor / Lazarus Group
+attribution: confirmed
+techniques:
+- O-CUSTODIAL-MIXER
+- O-CHAIN-HOP
+- O-OTC-P2P
+summary: On 31 May 2024, 4,502.9 BTC left DMM Bitcoin in a single transaction and was split across ten
+  wallets of 500 BTC. U.S. and Japanese authorities attributed the hack to North Korea in December 2024.
+  Reporting describes the proceeds going through a mixer, bridging onward (THORChain, Avalanche Bridge,
+  Threshold), conversion to USDT on Tron and deposits to Huione Guarantee (~$35M in July 2024).
+seeds:
+- kind: tx
+  value: 975ec405ac9dc9fa5ab8009d94d6a1fe31dff8a8127ea90d023104e52754e4d7
+  role: theft
+  ref: rekt-dmm-2024
+  note: 'Theft transaction: 4,502.9 BTC to the exploiter address'
+- kind: address
+  value: 1B6rJRfjTXwEy36SCs5zofGMmdv2kdZw7P
+  role: theft
+  ref: rekt-dmm-2024
+  note: Exploiter's initial address
+- kind: address
+  value: bc1qx6jpnnfjrfcx9ehhdmj7qqyzpyd8pek00trrq7
+  role: laundering
+  ref: rekt-dmm-2024
+  note: One of ten 500-BTC split wallets
+refs:
+- cybernews-dmm-2024
+- invezz-dmm-huione-2024
+- rekt-dmm-2024
+- coindesk-dmm-attribution-2024
+kb: incidents/i-2024-dmm.md

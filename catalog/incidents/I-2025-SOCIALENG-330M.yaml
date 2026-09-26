@@ -1,0 +1,26 @@
+id: I-2025-SOCIALENG-330M
+name: $330M social-engineering theft from an elderly holder
+date: '2025-04-28'
+loss: 3,520 BTC (~$330.7M)
+btc: 3520.0
+vector:
+- O-SOCIAL-ENGINEERING
+actor: null
+attribution: unknown
+techniques:
+- O-PEEL-CHAIN
+- O-INSTANT-SWAP
+- O-PRIVACY-COIN
+summary: On 28 April 2025 an elderly U.S. holder lost 3,520 BTC in a social-engineering attack. The thieves
+  laundered the funds with a peel chain through more than six instant exchanges and swapped them into
+  Monero, briefly pushing Monero's price up about 50%.
+seeds:
+- kind: address
+  value: bc1qcrypchnrdx87jnal5e5m849fw460t4gk7vz55g
+  role: theft
+  ref: zachxbt-330m-2025
+  note: Theft address published by ZachXBT
+refs:
+- cryptoslate-330m-2025
+- zachxbt-330m-2025
+kb: incidents/i-2025-socialeng-330m.md

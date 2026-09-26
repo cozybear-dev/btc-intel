@@ -1,0 +1,19 @@
+id: I-2012-SILKROAD
+name: Silk Road withdrawal exploit (James Zhong)
+date: 2012-09
+loss: ~50,676 BTC seized in 2021 (about 50,000 BTC obtained in 2012)
+btc: 50676.0
+vector:
+- O-PROTOCOL-EXPLOIT
+actor: James Zhong
+attribution: confirmed
+techniques:
+- O-DORMANCY
+summary: In September 2012 Zhong created at least nine Silk Road accounts, funded them with 200–2,000
+  BTC and triggered more than 140 rapid transactions that tricked the market's withdrawal processing into
+  releasing about 50,000 BTC. The coins stayed hidden for nine years until about 50,676 BTC was seized
+  from his home in November 2021; he pleaded guilty to wire fraud.
+seeds_note: The DOJ release does not list Bitcoin addresses; the forfeiture filings could supply them.
+refs:
+- doj-zhong-2022
+kb: incidents/i-2012-silkroad.md

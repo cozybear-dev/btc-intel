@@ -1,0 +1,25 @@
+id: I-2025-BYBIT
+name: Bybit hack (ETH) and conversion to BTC
+date: '2025-02-21'
+loss: ~$1.5B in ETH
+btc: null
+vector:
+- O-KEY-COMPROMISE
+actor: North Korea's TraderTraitor (Lazarus Group)
+attribution: confirmed
+techniques:
+- O-CHAIN-HOP
+- O-INSTANT-SWAP
+- O-DISPERSAL
+- O-OTC-P2P
+summary: On 21 February 2025 North Korea's TraderTraitor stole about $1.5B in ETH from Bybit. The launderers
+  moved at an unprecedented rate, largely converting the ETH to BTC through THORChain and swap services
+  such as eXch, then dispersing the BTC across thousands of addresses before further layering and OTC
+  cash-out.
+seeds_note: The theft itself was on Ethereum; the cited analyses do not list Bitcoin addresses in their
+  text. THORChain outbound transactions (memo OUT:<ETH hash>) and published investigator address lists
+  could supply BTC seeds.
+refs:
+- trm-bybit-2025
+- dlnews-bybit-2025
+kb: incidents/i-2025-bybit.md
