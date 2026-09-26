@@ -142,7 +142,8 @@
 - id: H-FP
   name: Wallet fingerprinting
   family: fingerprint
-  status: planned
+  status: implemented
+  implemented_by: btcintel.heuristics.fingerprint.fingerprint_heuristic
   confidence: medium
   summary: >-
     Transaction fields and construction choices differ between wallet software: nVersion,

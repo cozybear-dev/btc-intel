@@ -28,7 +28,7 @@ Analysis techniques (`H-*`), obfuscation / laundering / theft techniques (`O-*`)
 | [H-CJ-WHIRLPOOL-TX0](heuristics/h-cj-whirlpool-tx0.md) | ↳ Whirlpool Tx0 (premix) | coinjoin | planned | high |
 | [H-COINBASE](heuristics/h-coinbase.md) | Miner attribution | attribution | planned | high |
 | [H-CORR](heuristics/h-corr.md) | Amount/time correlation across services | pattern | planned | medium |
-| [H-FP](heuristics/h-fp.md) | Wallet fingerprinting | fingerprint | planned | medium |
+| [H-FP](heuristics/h-fp.md) | Wallet fingerprinting | fingerprint | implemented | medium |
 | [H-MOTIF-FANIN](heuristics/h-motif-fanin.md) | Fan-in / consolidation | pattern | planned | medium |
 | [H-MOTIF-FANOUT](heuristics/h-motif-fanout.md) | Fan-out / dispersal | pattern | planned | medium |
 | [H-MOTIF-SWEEP](heuristics/h-motif-sweep.md) | Mass key-compromise sweep | pattern | planned | medium |

@@ -1,6 +1,6 @@
 # H-FP — Wallet fingerprinting
 
-> **Family:** fingerprint · **Status in btc-intel:** planned · **Confidence:** medium
+> **Family:** fingerprint · **Status in btc-intel:** implemented · **Confidence:** medium
 
 ## Summary
 
@@ -38,7 +38,7 @@ Fingerprint mimicry, randomised fields and Taproot ([O-CHANGE-AVOIDANCE](../tech
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/fingerprint.py`.
+Implemented in `backend/btcintel/heuristics/fingerprint.py` (`fingerprint()`), which emits one `H-FP` finding per non-coinbase transaction whose evidence lists every trait above plus a `signature` used by H-CHG-FPCONT.
 
 ## Case examples
 
