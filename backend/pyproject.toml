@@ -5,8 +5,11 @@ description = "Open-source Bitcoin blockchain intelligence: tracing, clustering,
 requires-python = ">=3.13"
 license = "Apache-2.0"
 dependencies = [
+    "fastapi>=0.115",
+    "httpx[socks]>=0.27",
     "pydantic>=2.9",
     "pyyaml>=6.0",
+    "uvicorn[standard]>=0.30",
 ]
 
 [project.scripts]
@@ -39,5 +42,6 @@ dev = [
     "hypothesis>=6.112",
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
+    "respx>=0.21",
     "ruff>=0.7",
 ]
