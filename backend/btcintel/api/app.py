@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from btcintel import __version__
 from btcintel.api import (
@@ -25,6 +26,18 @@ from btcintel.config import Settings, load_settings
 from btcintel.paths import REPO_ROOT
 from btcintel.runtime import open_runtime
 
+LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "[::1]")
+WILDCARD_BINDS = ("0.0.0.0", "::", "")
+
+
+def allowed_hosts(bind_host: str) -> list[str]:
+    """Host headers the API answers. Checking them blocks DNS rebinding: without it any web page the
+    analyst visits could reach this unauthenticated, local-only API through the browser."""
+    if bind_host in WILDCARD_BINDS:
+        return ["*"]  # deliberately exposed on every interface (the CLI warns)
+    host = f"[{bind_host}]" if ":" in bind_host and not bind_host.startswith("[") else bind_host
+    return list(dict.fromkeys([*LOOPBACK_HOSTS, host]))
+
 
 def create_app(settings: Settings | None = None, *, chain: ChainSource | None = None) -> FastAPI:
     settings = settings or load_settings()
@@ -36,6 +49,7 @@ def create_app(settings: Settings | None = None, *, chain: ChainSource | None = 
             yield
 
     app = FastAPI(title="btc-intel", version=__version__, lifespan=lifespan)
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts(settings.host))
     for module in (routes_chain, routes_trace, routes_cluster, routes_tags, routes_cases, routes_kb):
         app.include_router(module.router)
 

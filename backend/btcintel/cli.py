@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import dataclasses
 import json
 import sys
 from collections.abc import Callable
@@ -151,6 +152,7 @@ def _cmd_serve(args: argparse.Namespace) -> int:
     port = args.port or settings.port
     if host not in ("127.0.0.1", "localhost", "::1"):
         print("WARNING: binding to a non-loopback address exposes an unauthenticated API", file=sys.stderr)
+    settings = dataclasses.replace(settings, host=host, port=port)
     uvicorn.run(create_app(settings), host=host, port=port, log_level="info")
     return 0
 

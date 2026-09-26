@@ -112,3 +112,19 @@ def test_kb_page_rejects_traversal(client):
     assert client.get("/api/kb-page", params={"path": "../../README.md"}).status_code == 400
     assert client.get("/api/kb-page", params={"path": "heuristics/missing.md"}).status_code == 404
     assert client.get("/api/kb-page", params={"path": "../../backend/pyproject.toml"}).status_code == 400
+
+
+def test_foreign_host_header_is_rejected(client):
+    """DNS rebinding: a page on another origin must not reach the local-only API through the browser."""
+    assert client.get("/api/health", headers={"host": "evil.example"}).status_code == 400
+    assert client.get("/api/cases", headers={"host": "attacker.test:8765"}).status_code == 400
+    for host in ("127.0.0.1:8765", "localhost:5173", "[::1]:8765"):
+        assert client.get("/api/health", headers={"host": host}).status_code == 200
+
+
+def test_allowed_hosts_follow_the_bind_address():
+    from btcintel.api.app import allowed_hosts
+
+    assert set(allowed_hosts("127.0.0.1")) == {"127.0.0.1", "localhost", "[::1]"}
+    assert "192.168.1.5" in allowed_hosts("192.168.1.5")
+    assert allowed_hosts("0.0.0.0") == ["*"] and allowed_hosts("::") == ["*"]

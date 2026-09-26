@@ -19,7 +19,7 @@ def make_client(tmp_path, scenario):
     def _make(chain=None) -> TestClient:
         settings = load_settings({"BTCINTEL_DATA_DIR": str(tmp_path / f"data{len(clients)}")})
         app = create_app(settings, chain=chain or FakeChain(scenario.txs))
-        client = TestClient(app)
+        client = TestClient(app, base_url="http://127.0.0.1")  # the API only answers loopback Host headers
         client.__enter__()
         app.state.rt.tags.add_many(scenario_tags())
         clients.append(client)
