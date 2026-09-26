@@ -1,6 +1,6 @@
 # H-CHG — Change-output detection (vote ensemble)
 
-> **Family:** change · **Status in btc-intel:** planned · **Confidence:** medium
+> **Family:** change · **Status in btc-intel:** implemented · **Confidence:** medium
 
 ## Summary
 
@@ -42,7 +42,19 @@ Meiklejohn et al. introduced change detection for clustering [meiklejohn2013]. L
 
 The `H-CHG` detector emits one `change` finding on the chosen output, with every vote and the per-output probabilities as evidence. Clustering never uses change links by default; tracing uses the change output to follow peel chains.
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/change.py`.
+Signals and weights (log-odds added per output; probability = sigmoid(sum); change = the unique argmax with p ≥ 0.6):
+
+| Signal | Vote |
+|---|---|
+| [H-CHG-SELF](h-chg-self.md) | +4.0 to an output paying an input address |
+| [H-CHG-SCRIPT](h-chg-script.md) | +1.0 to the only output matching the inputs' single script type; −0.5 to the others |
+| [H-CHG-ROUND](h-chg-round.md) | +1.2 to the only ragged output (≤3 trailing decimal zeros) when every other output is round (≥5 zeros); −1.2 to each round output |
+| [H-CHG-UNNECESSARY](h-chg-unnecessary.md) | +1.0 to the only output smaller than the smallest input, when there are ≥2 inputs |
+| [H-CHG-FPCONT](h-chg-fpcont.md) | needs a chain: +1.0 when the output's spending tx has the same fingerprint signature, −0.3 otherwise |
+
+Not applicable when the tx is coinbase, is a multi-party CoinJoin, or has <2 or >4 spendable outputs (checked in that order).
+
+Implemented in `backend/btcintel/heuristics/change.py` (`change_heuristic`).
 
 ## Case examples
 

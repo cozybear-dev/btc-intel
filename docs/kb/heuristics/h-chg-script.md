@@ -1,6 +1,6 @@
 # H-CHG-SCRIPT — Script-type match
 
-> **Family:** change · **Status in btc-intel:** planned · **Confidence:** medium · **Parent:** [H-CHG](h-chg.md)
+> **Family:** change · **Status in btc-intel:** implemented · **Confidence:** medium · **Parent:** [H-CHG](h-chg.md)
 
 ## Summary
 
@@ -26,7 +26,9 @@ Wallets that generate change matching the payee's script type ([O-CHANGE-AVOIDAN
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/change.py`.
+This signal contributes to the [H-CHG](h-chg.md) vote: +1.0 to the only output matching the inputs' single script type; −0.5 to the others.
+
+Implemented in `backend/btcintel/heuristics/change.py` (`offline_votes`).
 
 ## Case examples
 

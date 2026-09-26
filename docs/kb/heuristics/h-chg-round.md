@@ -1,6 +1,6 @@
 # H-CHG-ROUND — Round payment amount
 
-> **Family:** change · **Status in btc-intel:** planned · **Confidence:** medium · **Parent:** [H-CHG](h-chg.md)
+> **Family:** change · **Status in btc-intel:** implemented · **Confidence:** medium · **Parent:** [H-CHG](h-chg.md)
 
 ## Summary
 
@@ -28,7 +28,9 @@ Paying or requesting non-round amounts; [O-CHANGE-AVOIDANCE](../techniques/o-cha
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/change.py`.
+This signal contributes to the [H-CHG](h-chg.md) vote: +1.2 to the only ragged output (≤3 trailing decimal zeros) when every other output is round (≥5 zeros); −1.2 to each round output.
+
+Implemented in `backend/btcintel/heuristics/change.py` (`offline_votes`).
 
 ## Case examples
 

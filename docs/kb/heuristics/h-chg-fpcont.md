@@ -1,6 +1,6 @@
 # H-CHG-FPCONT — Fingerprint continuity
 
-> **Family:** change · **Status in btc-intel:** planned · **Confidence:** medium · **Parent:** [H-CHG](h-chg.md)
+> **Family:** change · **Status in btc-intel:** implemented · **Confidence:** medium · **Parent:** [H-CHG](h-chg.md)
 
 ## Summary
 
@@ -27,7 +27,9 @@ Fingerprint mimicry and randomised transaction fields ([O-CHANGE-AVOIDANCE](../t
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/change.py`.
+This signal contributes to the [H-CHG](h-chg.md) vote: needs a chain: +1.0 when the output's spending tx has the same fingerprint signature, −0.3 otherwise.
+
+Implemented in `backend/btcintel/heuristics/change.py` (`fingerprint_votes`).
 
 ## Case examples
 

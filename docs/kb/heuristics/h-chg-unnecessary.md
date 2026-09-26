@@ -1,6 +1,6 @@
 # H-CHG-UNNECESSARY — Unnecessary input
 
-> **Family:** change · **Status in btc-intel:** planned · **Confidence:** medium · **Parent:** [H-CHG](h-chg.md)
+> **Family:** change · **Status in btc-intel:** implemented · **Confidence:** medium · **Parent:** [H-CHG](h-chg.md)
 
 ## Summary
 
@@ -26,7 +26,9 @@ In satoshis: inputs of 200,000,000 and 300,000,000; outputs of 400,000,000 and 9
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/change.py`.
+This signal contributes to the [H-CHG](h-chg.md) vote: +1.0 to the only output smaller than the smallest input, when there are ≥2 inputs.
+
+Implemented in `backend/btcintel/heuristics/change.py` (`offline_votes`).
 
 ## Case examples
 

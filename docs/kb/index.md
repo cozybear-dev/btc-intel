@@ -8,14 +8,14 @@ Analysis techniques (`H-*`), obfuscation / laundering / theft techniques (`O-*`)
 
 | ID | Name | Family | Status | Confidence |
 |---|---|---|---|---|
-| [H-CHG](heuristics/h-chg.md) | Change-output detection (vote ensemble) | change | planned | medium |
-| [H-CHG-FPCONT](heuristics/h-chg-fpcont.md) | ↳ Fingerprint continuity | change | planned | medium |
+| [H-CHG](heuristics/h-chg.md) | Change-output detection (vote ensemble) | change | implemented | medium |
+| [H-CHG-FPCONT](heuristics/h-chg-fpcont.md) | ↳ Fingerprint continuity | change | implemented | medium |
 | [H-CHG-FRESH](heuristics/h-chg-fresh.md) | ↳ One-time (fresh) change address | change | planned | medium |
 | [H-CHG-POSITION](heuristics/h-chg-position.md) | ↳ Output ordering | change | planned | low |
-| [H-CHG-ROUND](heuristics/h-chg-round.md) | ↳ Round payment amount | change | planned | medium |
-| [H-CHG-SCRIPT](heuristics/h-chg-script.md) | ↳ Script-type match | change | planned | medium |
-| [H-CHG-SELF](heuristics/h-chg-self.md) | ↳ Change returned to an input address | change | planned | high |
-| [H-CHG-UNNECESSARY](heuristics/h-chg-unnecessary.md) | ↳ Unnecessary input | change | planned | medium |
+| [H-CHG-ROUND](heuristics/h-chg-round.md) | ↳ Round payment amount | change | implemented | medium |
+| [H-CHG-SCRIPT](heuristics/h-chg-script.md) | ↳ Script-type match | change | implemented | medium |
+| [H-CHG-SELF](heuristics/h-chg-self.md) | ↳ Change returned to an input address | change | implemented | high |
+| [H-CHG-UNNECESSARY](heuristics/h-chg-unnecessary.md) | ↳ Unnecessary input | change | implemented | medium |
 | [H-CIOH](heuristics/h-cioh.md) | Common-input-ownership | clustering | implemented | high |
 | [H-CJ](heuristics/h-cj.md) | CoinJoin detection | coinjoin | implemented | high |
 | [H-CJ-GENERIC](heuristics/h-cj-generic.md) | ↳ Generic equal-output multi-input transaction | coinjoin | implemented | low |

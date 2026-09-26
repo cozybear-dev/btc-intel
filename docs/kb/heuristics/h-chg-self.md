@@ -1,6 +1,6 @@
 # H-CHG-SELF — Change returned to an input address
 
-> **Family:** change · **Status in btc-intel:** planned · **Confidence:** high · **Parent:** [H-CHG](h-chg.md)
+> **Family:** change · **Status in btc-intel:** implemented · **Confidence:** high · **Parent:** [H-CHG](h-chg.md)
 
 ## Summary
 
@@ -27,7 +27,9 @@ Wallets that always derive a fresh change address remove the signal entirely.
 
 ## Detection in btc-intel
 
-Planned — Plan 2 implements this in `backend/btcintel/heuristics/change.py`.
+This signal contributes to the [H-CHG](h-chg.md) vote: +4.0 to an output paying an input address.
+
+Implemented in `backend/btcintel/heuristics/change.py` (`offline_votes`).
 
 ## Case examples
 
