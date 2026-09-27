@@ -1,10 +1,22 @@
-import { useEffect } from "react";
-import type { Bucket, ClusterSummary, Exposure, Profile, RiskLevel, Verdict } from "../api/types";
+import { useEffect, useReducer } from "react";
+import type { Bucket, ClusterSummary, Depth, Exposure, JobStatus, Profile, RiskLevel, Verdict } from "../api/types";
 import { addrNodeId } from "../graph/model";
-import { formatBtc, formatPct, formatTime } from "../lib/format";
+import { formatBtc, formatDuration, formatPct, formatTime } from "../lib/format";
 import { navigate } from "../lib/route";
 import { cancelJob, saveAnalysisAsCase, startAnalysis } from "../state/actions";
-import { useWorkbench } from "../state/store";
+import { type JobState, useWorkbench } from "../state/store";
+
+/** The analysis job's progress events, in the order the backend usually finishes them. */
+const STAGES = [
+  { key: "profile", label: "Profile" },
+  { key: "cluster", label: "Cluster" },
+  { key: "backward", label: "Sources" },
+  { key: "forward", label: "Destinations" },
+];
+
+const TAB_TITLES: Record<JobStatus, string> = {
+  running: "Analysing…", done: "✓ Analysis done", cancelled: "Analysis cancelled", error: "Analysis failed",
+};
 
 function openInGraph(nodeId: string | null) {
   navigate({ view: "graph" });
@@ -21,6 +33,81 @@ function RiskBadge({ level }: { level: RiskLevel }) {
 
 function Pending({ what, active }: { what: string; active: boolean }) {
   return <p className={`muted text-sm ${active ? "animate-pulse" : ""}`}>{active ? `${what}…` : "Not available."}</p>;
+}
+
+function Spinner() {
+  return (
+    <span aria-hidden className="inline-block w-3.5 h-3.5 shrink-0 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
+  );
+}
+
+/** Re-renders every second while `active`, for a live elapsed time. */
+function useTicking(active: boolean) {
+  const [, tick] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => {
+    if (!active) return;
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [active]);
+}
+
+function StageList({ job }: { job: JobState }) {
+  return (
+    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+      {STAGES.map(({ key, label }) => {
+        const state = job.stages.includes(key) ? "done" : job.status === "running" ? "running" : "not reached";
+        return (
+          <li key={key} aria-label={`${label}: ${state}`} className="flex items-center gap-1.5">
+            {state === "done" ? <span aria-hidden style={{ color: "var(--ok)" }}>✓</span>
+              : state === "running" ? <Spinner />
+              : <span aria-hidden className="muted">–</span>}
+            <span className={state === "done" ? "" : "muted"}>{label}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** Whether the analysis is starting, running or over, how long it took and how far it got. */
+function AnalysisProgress({ depth, job, error }: { depth: Depth; job: JobState | null; error: string | null }) {
+  const running = job?.status === "running";
+  useTicking(running);
+  const name = `${depth === "deep" ? "Deep" : "Quick"} analysis`;
+  let color = "var(--accent)";
+  let line: string;
+  if (!job) {
+    if (error) color = "var(--danger)";
+    line = error ? `${name} could not start: ${error}` : `Starting ${name.toLowerCase()}…`;
+  } else {
+    const elapsed = formatDuration((job.finished ?? Date.now()) - job.started);
+    const calls = job.calls !== null ? ` · ${job.calls} API calls` : "";
+    if (job.status === "running") {
+      const found = job.nodes ? ` · ${job.nodes.toLocaleString("en-US")} addresses and transactions found` : "";
+      line = `${name} running · ${elapsed}${found}${calls}`;
+    } else if (job.status === "done") {
+      color = "var(--ok)";
+      line = `${name} complete in ${elapsed}${calls}`;
+    } else if (job.status === "cancelled") {
+      color = "var(--risk-medium)";
+      line = `${name} cancelled after ${elapsed}${job.stages.length ? "; the results below are partial" : ""}`;
+    } else {
+      color = "var(--danger)";
+      line = `${name} failed after ${elapsed}: ${job.error ?? "unknown error"}`;
+    }
+  }
+  return (
+    <section role="status" aria-label="Analysis progress" className="panel p-3 space-y-2" style={{ borderLeft: `3px solid ${color}` }}>
+      <div className="flex flex-wrap items-center gap-2">
+        {(running || (!job && !error)) && <Spinner />}
+        {job?.status === "done" && <span aria-hidden style={{ color }}>✓</span>}
+        <span className="text-sm font-semibold" style={job && !running && job.status !== "done" ? { color } : undefined}>{line}</span>
+        {running && <button className="btn ml-auto" onClick={() => void cancelJob()}>Cancel</button>}
+      </div>
+      {job && <StageList job={job} />}
+      {job?.status === "done" && job.reason && <p className="muted text-xs">Stopped early: {job.reason}</p>}
+    </section>
+  );
 }
 
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
@@ -137,6 +224,18 @@ export default function AnalysisView({ address }: { address: string }) {
   const analysis = useWorkbench((s) => s.analysis);
   const job = useWorkbench((s) => s.job);
   const error = useWorkbench((s) => s.error);
+  const analysisJob = job?.kind === "analysis" ? job : null;
+  const jobStatus = analysisJob?.status;
+
+  useEffect(() => {
+    // the tab title shows how the analysis is going while the user is elsewhere
+    if (!jobStatus) return;
+    const base = document.title;
+    document.title = `${TAB_TITLES[jobStatus]} · ${base}`;
+    return () => {
+      document.title = base;
+    };
+  }, [jobStatus]);
 
   useEffect(() => {
     // startAnalysis sets `analysis` synchronously, so StrictMode's second effect run is a no-op
@@ -150,12 +249,9 @@ export default function AnalysisView({ address }: { address: string }) {
     return <div className="p-4"><Pending what="Starting analysis" active /></div>;
   }
   const { sections } = analysis;
-  const running = job?.kind === "analysis" && job.status === "running";
+  const running = jobStatus === "running";
   const pending = running || (!job && !error);
-  const status = running ? `analysing… ${job?.calls ?? 0} API calls`
-    : job?.status === "done" ? `done · ${job.calls ?? 0} API calls`
-    : job?.status === "error" ? `failed: ${job.error}`
-    : job?.status ?? (error ? `failed: ${error}` : "");
+  const deep = analysis.depth === "deep";
   const seed = addrNodeId(sections.profile?.address ?? address);
   return (
     <div className="h-full overflow-auto">
@@ -163,14 +259,20 @@ export default function AnalysisView({ address }: { address: string }) {
         <header className="flex flex-wrap items-center gap-3">
           <h1 className="mono text-lg break-all">{address}</h1>
           <button className="btn" onClick={() => void navigator.clipboard?.writeText(address)}>Copy</button>
-          <span className="muted text-sm">{analysis.depth} analysis{status ? ` · ${status}` : ""}</span>
           <div className="ml-auto flex flex-wrap gap-2">
-            {running && <button className="btn" onClick={() => void cancelJob()}>Cancel</button>}
             <button className="btn btn-primary" onClick={() => openInGraph(seed)}>Open in graph</button>
-            <button className="btn" disabled={running || analysis.depth === "deep"} onClick={() => void startAnalysis(address, "deep")}>Go deeper</button>
+            <button
+              className="btn"
+              disabled={pending || (deep && jobStatus === "done")}
+              title={deep && jobStatus === "done" ? "This is already a deep analysis" : undefined}
+              onClick={() => void startAnalysis(address, "deep")}
+            >
+              {deep && pending ? "Going deeper…" : "Go deeper"}
+            </button>
             <button className="btn" disabled={!analysis.markdown} onClick={() => void saveAnalysisAsCase()}>Save as case</button>
           </div>
         </header>
+        {(!job || analysisJob) && <AnalysisProgress depth={analysis.depth} job={analysisJob} error={error} />}
         {sections.verdict ? <VerdictPanel verdict={sections.verdict} running={running} /> : <Pending what="Checking labels" active={pending} />}
         <div className="grid gap-4 md:grid-cols-2">
           {sections.profile ? <ProfilePanel p={sections.profile} /> : <Pending what="Loading profile" active={pending} />}

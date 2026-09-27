@@ -158,13 +158,15 @@ test("startAnalysis streams sections and graph events, then fetches the markdown
   emit({ seq: 0, type: "section", name: "verdict", data: { level: "severe", final: false, low_confidence: false, coverage: "Tracing in progress…", reasons: [] } });
   emit({ seq: 1, type: "nodes", items: [{ id: "addr:bc1qaddr", kind: "address", label: "bc1qaddr", data: {} }] });
   emit({ seq: 2, type: "progress", stage: "cluster", calls: 12 });
+  expect(useWorkbench.getState().job).toMatchObject({ stages: ["cluster"], finished: null });
   emit({ seq: 3, type: "done", incomplete: false, reason: null, calls_used: 40 });
   emit({ seq: 4, type: "status", status: "done", error: null });
   await vi.waitFor(() => expect(useWorkbench.getState().analysis?.markdown).toBe("# Address analysis"));
   const s = useWorkbench.getState();
   expect(s.analysis?.sections.verdict?.level).toBe("severe");
   expect(s.graph.nodes["addr:bc1qaddr"]).toBeDefined();
-  expect(s.job).toMatchObject({ kind: "analysis", status: "done", calls: 40, nodes: 1 });
+  expect(s.job).toMatchObject({ kind: "analysis", status: "done", calls: 40, nodes: 1, stages: ["cluster"] });
+  expect(s.job!.finished).toBeGreaterThanOrEqual(s.job!.started);
 });
 
 test("a new analysis asks before discarding a hand-built graph, but not a previous analysis", async () => {

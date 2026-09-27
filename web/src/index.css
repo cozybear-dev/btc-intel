@@ -9,6 +9,7 @@
   --border: #dedede;
   --accent: #2f6fed;
   --danger: #c62828;
+  --ok: #2e9d5b;
   --risk-none: #8a8f98;
   --risk-low: #2e9d5b;
   --risk-medium: #c98f00;
@@ -30,6 +31,7 @@
     --border: #2d3139;
     --accent: #6ea0ff;
     --danger: #ff6b6b;
+    --ok: #4cc07e;
     --risk-none: #8a8f98;
     --risk-low: #4cc07e;
     --risk-medium: #e6b422;

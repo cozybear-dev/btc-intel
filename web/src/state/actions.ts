@@ -106,7 +106,10 @@ function listen(jobId: string, kind: JobState["kind"], onDone?: () => Promise<vo
   unsubscribe?.();
   const token = {};
   activeJob = token;
-  st().setJob({ id: jobId, kind, status: "running", nodes: 0, stops: 0, error: null, reason: null, calls: null });
+  st().setJob({
+    id: jobId, kind, status: "running", nodes: 0, stops: 0, error: null, reason: null, calls: null,
+    started: Date.now(), finished: null, stages: [],
+  });
   unsubscribe = subscribeJob(jobId, (e) => {
     if (activeJob !== token) return;
     if (e.type === "nodes" || e.type === "edges" || e.type === "stop") {
@@ -116,12 +119,17 @@ function listen(jobId: string, kind: JobState["kind"], onDone?: () => Promise<vo
     } else if (e.type === "section") {
       st().patchSections({ [e.name]: e.data } as AnalysisSections);
     } else if (e.type === "progress") {
-      st().patchJob({ calls: e.calls ?? null, ...(e.size !== undefined ? { nodes: e.size } : {}) });
+      const stages = st().job?.stages ?? [];
+      st().patchJob({
+        calls: e.calls ?? null,
+        ...(e.size !== undefined ? { nodes: e.size } : {}),
+        ...(e.stage && !stages.includes(e.stage) ? { stages: [...stages, e.stage] } : {}),
+      });
     } else if (e.type === "done") {
       st().patchJob({ reason: e.reason, calls: e.calls_used });
       if (e.incomplete) st().setMessage(`Partial result: ${e.reason ?? "stopped early"}`);
     } else if (e.type === "status") {
-      st().patchJob({ status: e.status, error: e.error });
+      st().patchJob({ status: e.status, error: e.error, finished: Date.now() });
       unsubscribe = null;
       if (e.status === "done" && onDone) void onDone();
     }

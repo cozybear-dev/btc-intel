@@ -11,6 +11,11 @@ export interface JobState {
   error: string | null;
   reason: string | null;
   calls: number | null;
+  /** Epoch ms when the job was started and when it ended (any final status). */
+  started: number;
+  finished: number | null;
+  /** Stages the job reported finished, in order (an analysis: profile, cluster, backward, forward). */
+  stages: string[];
 }
 
 export interface AnalysisState { address: string; depth: Depth; sections: AnalysisSections; markdown: string | null }
