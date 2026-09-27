@@ -122,7 +122,7 @@ btc-intel/
 - `get_tip_height`
 - `get_price(ts)`
 
-The `EsploraSource` backends are mempool.space (~1 req/s, honors `Retry-After`) and blockstream.info (optional API key, 500k req/month free). Any **self-hosted Esplora/mempool URL uses the same API**, so moving to your own node for tracing later needs no code change.
+The `EsploraSource` backends are mempool.space (~1 req/s, honors `Retry-After`) and blockstream.info (optional API key; unauthenticated use is capped at 700 req/hour per IP and 500k req/month, so the default rate is 0.19 req/s). Any **self-hosted Esplora/mempool URL uses the same API**, so moving to your own node for tracing later needs no code change.
 
 The backends are combined with per-backend token buckets, a failover rotation, and an optional `socks5h` Tor proxy. The Tor option is there for OPSEC, because public APIs see every address you query.
 

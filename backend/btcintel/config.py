@@ -10,7 +10,9 @@ from pathlib import Path
 
 from btcintel.paths import REPO_ROOT
 
-DEFAULT_BACKENDS = "mempool=https://mempool.space/api@1+price,blockstream=https://blockstream.info/api@4"
+# blockstream.info caps unauthenticated use at 700 requests an hour per IP (0.19/s) and answers
+# every request with 429 for the rest of the hour once it is exceeded.
+DEFAULT_BACKENDS = "mempool=https://mempool.space/api@1+price,blockstream=https://blockstream.info/api@0.19"
 
 
 @dataclass(frozen=True)

@@ -9,7 +9,9 @@ def test_default_backends():
         "mempool", "https://mempool.space/api", 1.0, 1,
     )
     assert mempool.supports_price
-    assert (blockstream.name, blockstream.rate_per_sec, blockstream.burst) == ("blockstream", 4.0, 4)
+    # blockstream.info allows 700 unauthenticated requests an hour per IP; faster, it answers only 429s
+    assert blockstream.name == "blockstream" and blockstream.rate_per_sec * 3600 <= 700
+    assert blockstream.burst == 1
     assert not blockstream.supports_price
 
 

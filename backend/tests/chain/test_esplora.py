@@ -2,8 +2,7 @@ import httpx
 import pytest
 import respx
 
-from btcintel.chain.budget import BudgetExceeded, CallBudget, budget_scope
-from btcintel.chain.errors import NotFound, SourceError
+from btcintel.chain.errors import NotFound, RateLimited, SourceError
 from btcintel.chain.esplora import EsploraBackend
 from btcintel.chain.ratelimit import TokenBucket
 from btcintel.config import BackendConfig
@@ -42,15 +41,33 @@ async def test_client_errors_are_not_found_without_retry(backend, status):
 
 
 @respx.mock
-async def test_429_honours_retry_after(backend):
+async def test_429_holds_the_backend_back_for_retry_after_and_hands_the_request_back(backend):
     b, ft = backend
     route = respx.get(f"{BASE}/x").mock(side_effect=[
         httpx.Response(429, headers={"Retry-After": "7"}),
         httpx.Response(200, json=[1]),
     ])
+    with pytest.raises(RateLimited):
+        await b.get_json("/x")
+    assert route.call_count == 1 and b.bucket.next_available() == 7
     assert await b.get_json("/x") == [1]
-    assert route.call_count == 2
     assert ft.now >= 7
+
+
+@respx.mock
+async def test_repeated_429s_hold_the_backend_back_longer_until_it_answers(backend):
+    b, ft = backend
+    respx.get(f"{BASE}/x").mock(side_effect=[httpx.Response(429)] * 3 + [httpx.Response(200, json=[1])] +
+                                [httpx.Response(429)])
+    for _ in range(3):
+        with pytest.raises(RateLimited):
+            await b.get_json("/x")
+    assert ft.sleeps == [0.5, 1.0]  # the waits before the 2nd and 3rd attempts
+    assert b.bucket.next_available() == 2.0
+    assert await b.get_json("/x") == [1]
+    with pytest.raises(RateLimited):
+        await b.get_json("/x")
+    assert b.bucket.next_available() == 0.5  # an answer resets the backoff
 
 
 @respx.mock
@@ -71,15 +88,6 @@ async def test_transport_error_is_retried(backend):
         httpx.Response(200, text="900000"),
     ])
     assert await b.get_text("/blocks/tip/height") == "900000"
-
-
-@respx.mock
-async def test_each_attempt_charges_the_budget(backend):
-    b, _ = backend
-    route = respx.get(f"{BASE}/x").mock(return_value=httpx.Response(503))
-    with budget_scope(CallBudget(2)), pytest.raises(BudgetExceeded):
-        await b.get_json("/x")
-    assert route.call_count == 2
 
 
 @respx.mock

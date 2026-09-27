@@ -5,8 +5,9 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from typing import Any, TypeVar
 
+from btcintel.chain.budget import charge_budget
 from btcintel.chain.cache import Cache
-from btcintel.chain.errors import NotFound, SourceError
+from btcintel.chain.errors import NotFound, RateLimited, SourceError
 from btcintel.chain.esplora import EsploraBackend
 from btcintel.chain.esplora_parse import parse_address, parse_outspends, parse_tx
 from btcintel.chain.models import AddressStats, Outspend, Tx
@@ -16,6 +17,7 @@ T = TypeVar("T")
 IMMUTABLE_CONFIRMATIONS = 6
 SHALLOW_TX_TTL = 60.0
 VOLATILE_TTL = 120.0
+RATE_LIMITED_ROUNDS = 5  # passes over the rate-limited backends before a request fails
 
 
 class ChainClient:
@@ -34,12 +36,23 @@ class ChainClient:
         candidates = self._ordered(need_price)
         if not candidates:
             raise SourceError("no configured backend supports this request")
-        errors = []
-        for backend in candidates:
-            try:
-                return await fn(backend)
-            except SourceError as e:
-                errors.append(str(e))
+        charge_budget()  # one lookup, however many attempts and backends it takes
+        errors: list[str] = []
+        for _ in range(RATE_LIMITED_ROUNDS):
+            limited = []
+            for backend in candidates:
+                try:
+                    return await fn(backend)
+                except RateLimited:
+                    limited.append(backend)  # held back now: the next backend takes the request
+                except SourceError as e:
+                    errors.append(str(e))
+            if not limited:
+                break
+            # every backend left is rate limited: wait for the first one free
+            candidates = sorted(limited, key=lambda b: b.bucket.next_available())
+        else:
+            errors.append(f"rate limited by {', '.join(b.name for b in candidates)}")
         raise SourceError("all backends failed: " + "; ".join(errors))
 
     async def tip_height(self) -> int:

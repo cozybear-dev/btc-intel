@@ -5,6 +5,7 @@ from pathlib import Path
 import httpx
 import pytest
 
+from btcintel.chain.budget import BudgetExceeded, CallBudget, budget_scope
 from btcintel.chain.cache import Cache
 from btcintel.chain.client import ChainClient
 from btcintel.chain.errors import NotFound, SourceError
@@ -40,7 +41,9 @@ async def make_client(tmp_path):
             return EsploraBackend(cfg, http, bucket=TokenBucket(100.0, 100, clock=ft.clock, sleep=ft.sleep),
                                   sleep=ft.sleep)
         cache = Cache(tmp_path / "cache.db", clock=lambda: now[0])
-        return ChainClient([backend("a", A, True), backend("b", B, False)], cache)
+        client = ChainClient([backend("a", A, True), backend("b", B, False)], cache)
+        client.ft = ft  # type: ignore[attr-defined]
+        return client
 
     _make.now = now  # type: ignore[attr-defined]
     yield _make
@@ -109,6 +112,61 @@ async def test_all_backends_failing_raises_source_error(make_client, respx_mock)
     respx_mock.get(f"{B}/tx/{TXID}").mock(return_value=httpx.Response(503))
     with pytest.raises(SourceError, match="all backends failed"):
         await client.get_tx(TXID)
+
+
+@pytest.mark.respx(assert_all_called=False)
+async def test_a_rate_limited_backend_fails_over_at_once(make_client, respx_mock):
+    # blockstream.info over its hourly quota answers every request with 429 and no Retry-After
+    client = make_client()
+    a_route = respx_mock.get(f"{A}/tx/{TXID}").mock(return_value=httpx.Response(429))
+    b_route = respx_mock.get(f"{B}/tx/{TXID}").mock(return_value=httpx.Response(200, json=fixture_tx(confirmed=False)))
+    assert (await client.get_tx(TXID)).txid == TXID
+    assert a_route.call_count == 1 and b_route.call_count == 1
+    assert client.ft.sleeps == []  # nobody waited for a
+
+
+@pytest.mark.respx(assert_all_called=False)
+async def test_rate_limited_everywhere_waits_for_the_first_backend_free(make_client, respx_mock):
+    client = make_client()
+    respx_mock.get(f"{A}/tx/{TXID}").mock(side_effect=[httpx.Response(429, headers={"Retry-After": "9"})])
+    respx_mock.get(f"{B}/tx/{TXID}").mock(side_effect=[
+        httpx.Response(429, headers={"Retry-After": "3"}), httpx.Response(200, json=fixture_tx(confirmed=False)),
+    ])
+    assert (await client.get_tx(TXID)).txid == TXID
+    assert client.ft.now == 3
+
+
+@pytest.mark.respx(assert_all_called=False)
+async def test_rate_limited_on_every_round_raises_source_error(make_client, respx_mock):
+    client = make_client()
+    respx_mock.get(f"{A}/tx/{TXID}").mock(return_value=httpx.Response(429))
+    respx_mock.get(f"{B}/tx/{TXID}").mock(return_value=httpx.Response(429))
+    with pytest.raises(SourceError, match="rate limited"):
+        await client.get_tx(TXID)
+
+
+@pytest.mark.respx(assert_all_called=False)
+async def test_a_lookup_charges_the_budget_once_however_many_attempts_it_takes(make_client, respx_mock):
+    # 429s and server errors are the API's doing, not work: on public APIs they used up half of an
+    # analysis trace's budget. Retries and rate-limit rounds bound the attempts instead.
+    client = make_client()
+    respx_mock.get(f"{A}/tx/{TXID}").mock(side_effect=[httpx.Response(429), httpx.Response(503)] +
+                                          [httpx.Response(503)] * 4)
+    respx_mock.get(f"{B}/tx/{TXID}").mock(side_effect=[
+        httpx.Response(429), httpx.ConnectError("boom"), httpx.Response(200, json=fixture_tx(confirmed=False)),
+    ])
+    with budget_scope(CallBudget(1)) as budget:
+        assert (await client.get_tx(TXID)).txid == TXID
+    assert budget.used == 1
+
+
+@pytest.mark.respx(assert_all_called=False)
+async def test_an_exhausted_budget_stops_the_lookup_before_it_is_sent(make_client, respx_mock):
+    client = make_client()
+    a_route = respx_mock.get(f"{A}/tx/{TXID}").mock(return_value=httpx.Response(200, json=fixture_tx(confirmed=False)))
+    with budget_scope(CallBudget(0)), pytest.raises(BudgetExceeded):
+        await client.get_tx(TXID)
+    assert a_route.call_count == 0
 
 
 @pytest.mark.respx(assert_all_called=False)

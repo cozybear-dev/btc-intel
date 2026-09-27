@@ -8,8 +8,7 @@ from typing import Any
 
 import httpx
 
-from btcintel.chain.budget import charge_budget
-from btcintel.chain.errors import NotFound, SourceError
+from btcintel.chain.errors import NotFound, RateLimited, SourceError
 from btcintel.chain.ratelimit import TokenBucket
 from btcintel.config import BackendConfig
 
@@ -42,6 +41,7 @@ class EsploraBackend:
         self.bucket = bucket or TokenBucket(cfg.rate_per_sec, cfg.burst)
         self.max_retries = max_retries
         self._sleep = sleep
+        self._throttled = 0  # 429s in a row: each one holds the backend back longer
 
     async def get_json(self, path: str) -> Any:
         return (await self._request(path)).json()
@@ -55,7 +55,6 @@ class EsploraBackend:
         attempts = self.max_retries + 1
         for attempt in range(attempts):
             await self.bucket.acquire()
-            charge_budget()
             try:
                 resp = await self.client.get(url, headers=dict(self.cfg.headers))
             except httpx.TransportError as e:
@@ -64,13 +63,15 @@ class EsploraBackend:
                 continue
             status = resp.status_code
             if status == 200:
+                self._throttled = 0
                 return resp
             if status in (400, 404):
                 raise NotFound(f"{self.name}: {path} (HTTP {status})")
             if status == 429:
-                self.bucket.penalize(_retry_after(resp.headers.get("Retry-After")) or _backoff(attempt))
-                last = "HTTP 429"
-                continue
+                # Not retried here: the caller can send the request to another backend meanwhile.
+                self.bucket.penalize(_retry_after(resp.headers.get("Retry-After")) or _backoff(self._throttled))
+                self._throttled += 1
+                raise RateLimited(f"{self.name}: {path} HTTP 429")
             if status >= 500:
                 last = f"HTTP {status}"
                 await self._sleep(_backoff(attempt))
