@@ -190,6 +190,7 @@ async def analyze_address(address: str, policy: AnalysisPolicy, *, chain: ChainS
                             cluster=cluster, sources=sources, destinations=destinations, verdict=verdict,
                             calls_used=calls)
     report = report.model_copy(update={"markdown": to_markdown(report)})
-    stopped = [e.reason for e in (sources, destinations) if e.incomplete and e.reason]
+    stopped = [f"{name}: {e.reason}" for name, e in (("sources", sources), ("destinations", destinations))
+               if e.incomplete and e.reason]
     send({"type": "done", "incomplete": bool(stopped), "reason": "; ".join(stopped) or None, "calls_used": calls})
     return report

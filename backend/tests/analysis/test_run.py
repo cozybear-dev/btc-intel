@@ -111,3 +111,10 @@ async def test_a_labeled_address_is_traced_through_its_own_change():
     kinds = {(b.kind, b.label) for b in report.destinations.buckets}
     assert ("labeled", "Example Exchange") in kinds
     assert not any(k == "own_cluster" for k, _ in kinds)
+
+
+async def test_the_done_reason_names_the_direction_each_stop_came_from():
+    policy = AnalysisPolicy.quick().model_copy(update={"trace_calls": 1})
+    _, events = await run_analysis(FakeChain(build_funded().txs), policy=policy)
+    # the backward trace needs no call past the history here; the forward one runs out
+    assert events[-1]["incomplete"] and events[-1]["reason"] == "destinations: API call budget of 1 exhausted"
